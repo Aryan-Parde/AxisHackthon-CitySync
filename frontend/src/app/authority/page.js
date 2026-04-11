@@ -12,23 +12,23 @@ import {
 } from 'lucide-react';
 
 const priorityColors = {
-  critical: 'bg-red-100 text-red-600',
-  high: 'bg-orange-100 text-orange-600',
-  medium: 'bg-amber-100 text-amber-600',
-  low: 'bg-emerald-100 text-emerald-600',
+  critical: 'bg-red-500/15 text-red-400',
+  high: 'bg-orange-500/15 text-orange-400',
+  medium: 'bg-amber-500/15 text-amber-400',
+  low: 'bg-emerald-500/15 text-emerald-400',
 };
 
 const statusColors = {
-  submitted: 'bg-amber-100 text-amber-600',
-  under_review: 'bg-sky-100 text-sky-600',
-  in_progress: 'bg-[#2EC4B6]/10 text-[#22a99d]',
-  resolved: 'bg-emerald-100 text-emerald-600',
-  escalated: 'bg-red-100 text-red-600',
-  fake: 'bg-rose-100 text-rose-600 font-bold',
-  closed: 'bg-gray-100 text-gray-500',
+  submitted: 'bg-amber-500/15 text-amber-400',
+  under_review: 'bg-cyan-500/15 text-cyan-400',
+  in_progress: 'bg-indigo-500/15 text-indigo-400',
+  resolved: 'bg-emerald-500/15 text-emerald-400',
+  escalated: 'bg-red-500/15 text-red-400',
+  fake: 'bg-red-500/15 text-red-500 font-bold',
+  closed: 'bg-gray-500/15 text-gray-400',
 };
 
-export default function AdminDashboardPage() {
+export default function AuthorityDashboardPage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [stats, setStats] = useState(null);
   const [complaints, setComplaints] = useState([]);
@@ -46,9 +46,13 @@ export default function AdminDashboardPage() {
 
   const fetchData = async () => {
     try {
+      const deptId = user?.department?._id || user?.department; // fallback if string
+      const params = deptId ? { department: deptId } : {};
+      
       const [statsRes, complaintsRes, deptsRes] = await Promise.all([
-        adminAPI.getDashboard(),
-        adminAPI.getComplaints({ limit: 10, sortBy: 'createdAt', sortOrder: 'desc' }),
+        adminAPI.getDashboard(params),
+        adminAPI.getComplaints({ ...params, limit: 10, sortBy: 'createdAt', sortOrder: 'desc' }),
+        // For authority, maybe we don't need all departments, but let's keep it for UI structure or filter later
         adminAPI.getDepartments(),
       ]);
       setStats(statsRes.data.data);
@@ -77,29 +81,34 @@ export default function AdminDashboardPage() {
   const overview = stats?.overview || {};
 
   const statCards = [
-    { label: 'Total', value: overview.total || 0, icon: FileText, gradient: 'from-[#2EC4B6] to-[#90DBF4]', textColor: 'text-[#2EC4B6]' },
-    { label: 'Resolved', value: overview.resolved || 0, icon: CheckCircle, gradient: 'from-emerald-400 to-teal-500', textColor: 'text-emerald-500', sub: `${overview.resolutionRate || 0}% rate` },
-    { label: 'Pending', value: (overview.pending || 0) + (overview.inProgress || 0), icon: Clock, gradient: 'from-[#FFBF69] to-[#f5a83a]', textColor: 'text-amber-500' },
-    { label: 'Escalated', value: overview.escalated || 0, icon: AlertTriangle, gradient: 'from-rose-400 to-pink-500', textColor: 'text-rose-500' },
+    { label: 'Total', value: overview.total || 0, icon: FileText, gradient: 'from-indigo-500 to-purple-500' },
+    { label: 'Resolved', value: overview.resolved || 0, icon: CheckCircle, gradient: 'from-emerald-500 to-teal-500', sub: `${overview.resolutionRate || 0}% rate` },
+    { label: 'Pending', value: (overview.pending || 0) + (overview.inProgress || 0), icon: Clock, gradient: 'from-amber-500 to-orange-500' },
+    { label: 'Escalated', value: overview.escalated || 0, icon: AlertTriangle, gradient: 'from-red-500 to-pink-500' },
   ];
 
   return (
     <div className="min-h-screen bg-[var(--bg-darker)]">
       {/* Top bar */}
-      <div className="border-b border-[var(--border)] bg-white/80 backdrop-blur-md">
+      <div className="border-b border-[var(--border)] glass">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors">
+            <Link href="/dashboard" className="text-[var(--text-muted)] hover:text-white">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#2EC4B6] to-[#90DBF4] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center">
               <MapPin className="w-4 h-4 text-white" />
             </div>
-            <h1 className="text-lg font-bold gradient-text">Admin Dashboard</h1>
+            <h1 className="text-lg font-bold gradient-text">Authority Workspace</h1>
+            {user?.department?.name && (
+              <span className="ml-2 text-sm text-[var(--text-muted)] bg-[var(--bg-card)] px-2 py-1 rounded">
+                {user.department.name}
+              </span>
+            )}
           </div>
           <Link
             href="/admin/analytics"
-            className="text-sm text-[#22a99d] hover:text-[#2EC4B6] flex items-center gap-1 font-medium"
+            className="text-sm text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
           >
             <BarChart3 className="w-4 h-4" />
             Analytics
@@ -121,8 +130,8 @@ export default function AdminDashboardPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-[var(--text-muted)]">{stat.label}</p>
-                  <p className={`text-3xl font-bold mt-1 ${stat.textColor}`}>{stat.value}</p>
-                  {stat.sub && <p className="text-xs text-emerald-500 mt-1">{stat.sub}</p>}
+                  <p className="text-3xl font-bold text-white mt-1">{stat.value}</p>
+                  {stat.sub && <p className="text-xs text-emerald-400 mt-1">{stat.sub}</p>}
                 </div>
                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center`}>
                   <stat.icon className="w-5 h-5 text-white" />
@@ -135,8 +144,8 @@ export default function AdminDashboardPage() {
         {/* Avg resolution + zone breakdown */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Resolution Time */}
-          <div className="glass rounded-2xl p-6">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Avg Resolution Time</h2>
+          <div className="glass rounded-2xl p-5">
+            <h2 className="text-lg font-semibold text-white mb-4">Avg Resolution Time</h2>
             <div className="text-center py-8">
               <p className="text-5xl font-bold gradient-text">{overview.avgResolutionHours || 0}</p>
               <p className="text-sm text-[var(--text-muted)] mt-2">hours</p>
@@ -144,8 +153,8 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Zone Breakdown */}
-          <div className="glass rounded-2xl p-6">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Zone Breakdown</h2>
+          <div className="glass rounded-2xl p-5">
+            <h2 className="text-lg font-semibold text-white mb-4">Zone Breakdown</h2>
             {stats?.zoneBreakdown?.length > 0 ? (
               <div className="space-y-3">
                 {stats.zoneBreakdown.map((zone, i) => {
@@ -154,13 +163,13 @@ export default function AdminDashboardPage() {
                   return (
                     <div key={i} className="flex items-center gap-3">
                       <span className="text-sm text-[var(--text-secondary)] w-20">{zone._id || 'Unknown'}</span>
-                      <div className="flex-1 h-2 rounded-full bg-[var(--bg-dark)]">
+                      <div className="flex-1 h-2 rounded-full bg-[var(--bg-card-hover)]">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-[#2EC4B6] to-[#90DBF4]"
+                          className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-500"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                      <span className="text-sm font-medium text-[var(--text-primary)] w-10 text-right">{zone.count}</span>
+                      <span className="text-sm font-medium text-white w-10 text-right">{zone.count}</span>
                     </div>
                   );
                 })}
@@ -172,10 +181,10 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Authority Performance */}
-        <div className="glass rounded-2xl p-6">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
-            <Building2 className="w-5 h-5 inline mr-2 text-[#2EC4B6]" />
-            Authority Performance
+        <div className="glass rounded-2xl p-5">
+          <h2 className="text-lg font-semibold text-white mb-4">
+            <Building2 className="w-5 h-5 inline mr-2" />
+            Authority Branches Performance
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -191,28 +200,28 @@ export default function AdminDashboardPage() {
               </thead>
               <tbody>
                 {departments.map((dept, i) => (
-                  <tr key={i} className="border-b border-[var(--border)]/50 hover:bg-[var(--bg-card-hover)] transition-colors">
+                  <tr key={i} className="border-b border-[var(--border)]/50 hover:bg-[var(--bg-card-hover)]">
                     <td className="py-3 px-3">
                       <div className="flex items-center gap-2">
                         <span>{dept.icon || '🏢'}</span>
-                        <span className="text-[var(--text-primary)] font-medium">{dept.name}</span>
+                        <span className="text-white font-medium">{dept.name}</span>
                       </div>
                     </td>
-                    <td className="text-center py-3 px-3 text-[var(--text-primary)] font-medium">{dept.liveStats?.total || 0}</td>
-                    <td className="text-center py-3 px-3 text-amber-500 font-medium">{dept.liveStats?.pending || 0}</td>
-                    <td className="text-center py-3 px-3 text-emerald-500 font-medium">{dept.liveStats?.resolved || 0}</td>
+                    <td className="text-center py-3 px-3 text-white">{dept.liveStats?.total || 0}</td>
+                    <td className="text-center py-3 px-3 text-amber-400">{dept.liveStats?.pending || 0}</td>
+                    <td className="text-center py-3 px-3 text-emerald-400">{dept.liveStats?.resolved || 0}</td>
                     <td className="text-center py-3 px-3">
-                      <span className="text-emerald-500 font-medium">{dept.liveStats?.resolutionRate || 0}%</span>
+                      <span className="text-emerald-400">{dept.liveStats?.resolutionRate || 0}%</span>
                     </td>
                     <td className="text-center py-3 px-3">
                       <div className="flex items-center justify-center gap-2">
-                        <div className="w-16 h-1.5 rounded-full bg-[var(--bg-dark)]">
+                        <div className="w-16 h-1.5 rounded-full bg-[var(--bg-card-hover)]">
                           <div
-                            className="h-full rounded-full bg-gradient-to-r from-[#2EC4B6] to-[#90DBF4]"
+                            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-500"
                             style={{ width: `${dept.performanceScore || 0}%` }}
                           />
                         </div>
-                        <span className="text-[var(--text-primary)] text-xs font-medium">{dept.performanceScore || 0}</span>
+                        <span className="text-white text-xs">{dept.performanceScore || 0}</span>
                       </div>
                     </td>
                   </tr>
@@ -223,8 +232,8 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Recent Complaints Table */}
-        <div className="glass rounded-2xl p-6">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Recent Complaints</h2>
+        <div className="glass rounded-2xl p-5">
+          <h2 className="text-lg font-semibold text-white mb-4">Recent Complaints</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -239,17 +248,17 @@ export default function AdminDashboardPage() {
               </thead>
               <tbody>
                 {complaints.map((c, i) => (
-                  <tr key={i} className="border-b border-[var(--border)]/50 hover:bg-[var(--bg-card-hover)] transition-colors">
-                    <td className="py-3 px-3 text-[#22a99d] font-mono text-xs font-semibold">{c.ticketId}</td>
-                    <td className="py-3 px-3 text-[var(--text-primary)] font-medium max-w-[200px] truncate">{c.title}</td>
+                  <tr key={i} className="border-b border-[var(--border)]/50 hover:bg-[var(--bg-card-hover)]">
+                    <td className="py-3 px-3 text-indigo-400 font-mono text-xs">{c.ticketId}</td>
+                    <td className="py-3 px-3 text-white max-w-[200px] truncate">{c.title}</td>
                     <td className="py-3 px-3 text-[var(--text-secondary)] capitalize">{c.category?.replace('_', ' ')}</td>
                     <td className="py-3 px-3 text-center">
-                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${priorityColors[c.priority?.level]}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priorityColors[c.priority?.level]}`}>
                         {c.priority?.level}
                       </span>
                     </td>
                     <td className="py-3 px-3 text-center">
-                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${statusColors[c.status]}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[c.status]}`}>
                         {c.status?.replace('_', ' ')}
                       </span>
                     </td>

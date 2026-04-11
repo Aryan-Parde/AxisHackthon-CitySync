@@ -1,9 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { authAPI } from '@/lib/api';
 import { motion } from 'framer-motion';
-import { MapPin, Shield, Zap, BarChart3, Users, Clock, ChevronRight, ArrowRight } from 'lucide-react';
+import { MapPin, Shield, Zap, BarChart3, Users, Clock, ChevronRight, ArrowRight, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const features = [
   {
@@ -51,8 +54,38 @@ const stats = [
   { value: '8', label: 'City Departments' },
 ];
 
+const quickLogins = [
+  { label: 'Citizen', mobile: '9876500000', icon: '👤', color: 'from-emerald-500/20 to-teal-500/20', textColor: 'text-emerald-400' },
+  { label: 'Roads Authority', mobile: '8000000000', icon: '🛣️', color: 'from-indigo-500/20 to-cyan-500/20', textColor: 'text-indigo-400' },
+  { label: 'Water Authority', mobile: '8000000001', icon: '💧', color: 'from-blue-500/20 to-cyan-500/20', textColor: 'text-blue-400' },
+  { label: 'Sanitation Authority', mobile: '8000000002', icon: '🗑️', color: 'from-amber-500/20 to-orange-500/20', textColor: 'text-amber-400' },
+  { label: 'Lighting Authority', mobile: '8000000003', icon: '💡', color: 'from-yellow-500/20 to-orange-500/20', textColor: 'text-yellow-400' },
+  { label: 'Sewage Authority', mobile: '8000000004', icon: '🚰', color: 'from-cyan-500/20 to-blue-500/20', textColor: 'text-cyan-400' },
+  { label: 'Traffic Authority', mobile: '8000000005', icon: '🚦', color: 'from-red-500/20 to-rose-500/20', textColor: 'text-red-400' },
+];
+
 export default function LandingPage() {
   const { isAuthenticated } = useAuth();
+  const [loadingRole, setLoadingRole] = useState(null);
+
+  const handleAutoLogin = async (roleLabel, demoMobile) => {
+    setLoadingRole(roleLabel);
+    try {
+      await authAPI.sendOTP(demoMobile);
+      const verifyRes = await authAPI.verifyOTP(demoMobile, '123456');
+      
+      const { token, user } = verifyRes.data.data;
+      localStorage.setItem('citysync_token', token);
+      localStorage.setItem('citysync_user', JSON.stringify(user));
+      
+      toast.success(`Logged in as ${user.role}!`);
+      window.location.href = '/dashboard';
+    } catch (error) {
+      toast.error('Quick login failed. Try the standard login page.');
+    } finally {
+      setLoadingRole(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[var(--bg-darker)]">
@@ -137,6 +170,53 @@ export default function LandingPage() {
               </Link>
             </div>
           </motion.div>
+
+          {/* Quick Access Roles */}
+          {!isAuthenticated && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="mt-16 overflow-hidden max-w-5xl mx-auto px-4"
+            >
+              <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-6 text-center">
+                Demo Quick Access • Experience the Platform
+              </p>
+              
+              <div className="relative group">
+                <div className="flex overflow-x-auto gap-4 pb-6 scrollbar-hide snap-x no-scrollbar mask-fade">
+                  {quickLogins.map((role, i) => (
+                    <button
+                      key={i}
+                      disabled={!!loadingRole}
+                      onClick={() => handleAutoLogin(role.label, role.mobile)}
+                      className={`flex-none w-56 p-5 rounded-2xl bg-gradient-to-br ${role.color} border border-white/5 hover:border-white/10 transition-all text-left snap-start group/card relative overflow-hidden`}
+                    >
+                      <div className="relative z-10">
+                        <span className="text-3xl block mb-3">{role.icon}</span>
+                        <h3 className={`text-base font-bold ${role.textColor} mb-1 flex items-center gap-2`}>
+                          {role.label}
+                          {loadingRole === role.label ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <ArrowRight className="w-4 h-4 opacity-0 group-hover/card:opacity-100 transition-all translate-x-[-10px] group-hover/card:translate-x-0" />
+                          )}
+                        </h3>
+                        <p className="text-xs text-[var(--text-muted)] line-clamp-1">Fast-track to {role.label.split(' ')[0]} panel</p>
+                      </div>
+                      
+                      {/* Hover effect background */}
+                      <div className="absolute inset-0 bg-white/5 opacity-0 group-hover/card:opacity-100 transition-opacity" />
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Scroll indicators */}
+                <div className="absolute -left-4 top-0 bottom-0 w-8 bg-gradient-to-r from-[var(--bg-darker)] to-transparent pointer-events-none" />
+                <div className="absolute -right-4 top-0 bottom-0 w-8 bg-gradient-to-l from-[var(--bg-darker)] to-transparent pointer-events-none" />
+              </div>
+            </motion.div>
+          )}
 
           {/* Stats */}
           <motion.div

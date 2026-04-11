@@ -9,6 +9,9 @@ const EscalationService = require('../services/escalationService');
 // @access  Private (admin)
 exports.getDashboardStats = async (req, res, next) => {
   try {
+    const { department } = req.query;
+    const cacheQuery = department ? { department } : {};
+
     const [
       totalComplaints,
       resolved,
@@ -17,12 +20,12 @@ exports.getDashboardStats = async (req, res, next) => {
       escalated,
       critical
     ] = await Promise.all([
-      Complaint.countDocuments(),
-      Complaint.countDocuments({ status: 'resolved' }),
-      Complaint.countDocuments({ status: 'submitted' }),
-      Complaint.countDocuments({ status: 'in_progress' }),
-      Complaint.countDocuments({ status: 'escalated' }),
-      Complaint.countDocuments({ 'priority.level': 'critical' })
+      Complaint.countDocuments(cacheQuery),
+      Complaint.countDocuments({ ...cacheQuery, status: 'resolved' }),
+      Complaint.countDocuments({ ...cacheQuery, status: 'submitted' }),
+      Complaint.countDocuments({ ...cacheQuery, status: 'in_progress' }),
+      Complaint.countDocuments({ ...cacheQuery, status: 'escalated' }),
+      Complaint.countDocuments({ ...cacheQuery, 'priority.level': 'critical' })
     ]);
 
     // Average resolution time (for resolved complaints)
@@ -108,7 +111,7 @@ exports.getDashboardStats = async (req, res, next) => {
 exports.getAllComplaints = async (req, res, next) => {
   try {
     const {
-      status, category, priority, zone,
+      status, category, priority, zone, department,
       search, page = 1, limit = 20,
       sortBy = 'createdAt', sortOrder = 'desc'
     } = req.query;
@@ -118,6 +121,7 @@ exports.getAllComplaints = async (req, res, next) => {
     if (category) query.category = category;
     if (priority) query['priority.level'] = priority;
     if (zone) query['location.zone'] = zone;
+    if (department) query.department = department;
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: 'i' } },

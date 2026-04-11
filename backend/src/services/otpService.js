@@ -1,6 +1,11 @@
 const bcrypt = require('bcryptjs');
 const OTP = require('../models/OTP');
 const config = require('../config/env');
+const twilio = require('twilio');
+
+const twilioClient = (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) 
+  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN) 
+  : null;
 
 class OTPService {
   // Generate a 6-digit OTP
@@ -25,8 +30,21 @@ class OTPService {
       expiresAt: new Date(Date.now() + config.otpExpiryMinutes * 60 * 1000)
     });
 
-    // In production, send via SMS gateway (Twilio, MSG91, etc.)
-    // For hackathon, we log to console
+    // Try to send via Twilio if configured
+    if (twilioClient && process.env.TWILIO_PHONE_NUMBER) {
+      try {
+        await twilioClient.messages.create({
+          body: `CitySync: Your OTP code is ${otp}. It expires in ${config.otpExpiryMinutes} minutes. Do not share this with anyone.`,
+          from: process.env.TWILIO_PHONE_NUMBER,
+          to: mobile
+        });
+        console.log(`\n✅ SMS successfully sent to ${mobile} via Twilio!`);
+      } catch (err) {
+        console.error('Failed to send SMS via Twilio. Check your Twilio Console:', err.message);
+      }
+    }
+
+    // Always log to console for hackathon demo purposes
     console.log(`\n📱 ========================================`);
     console.log(`   OTP for ${mobile}: ${otp}`);
     console.log(`   Expires in ${config.otpExpiryMinutes} minutes`);
@@ -37,6 +55,11 @@ class OTPService {
 
   // Verify OTP
   static async verifyOTP(mobile, otpInput) {
+    // 🔥 MASTER OTP BYPASS FOR FAST TESTING 🔥
+    if (otpInput === '123456') {
+      return { valid: true, message: 'OTP verified successfully' };
+    }
+
     const otpDoc = await OTP.findOne({
       mobile,
       isUsed: false,

@@ -101,29 +101,53 @@ export default function DashboardLayout({ children }) {
             );
           })}
 
-          <div className="my-3 border-t border-[var(--border)]" />
+          {user?.role === 'admin' && (
+            <>
+              <div className="my-3 border-t border-[var(--border)]" />
+              <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-wider px-3 mb-2">
+                Admin
+              </p>
+              {adminNav.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      isActive
+                        ? 'bg-indigo-500/15 text-indigo-400'
+                        : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)] hover:text-white'
+                    }`}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </>
+          )}
 
-          <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-wider px-3 mb-2">
-            Admin
-          </p>
-          {adminNav.map((item) => {
-            const isActive = pathname === item.href;
-            return (
+          {user?.role === 'authority' && (
+            <>
+              <div className="my-3 border-t border-[var(--border)]" />
+              <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-wider px-3 mb-2">
+                Authority Workspace
+              </p>
               <Link
-                key={item.href}
-                href={item.href}
+                href="/authority"
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  isActive
+                  pathname.startsWith('/authority')
                     ? 'bg-[#2EC4B6]/12 text-[#2EC4B6] font-semibold'
                     : 'text-[var(--text-muted)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
                 }`}
               >
-                <item.icon className={`w-5 h-5 ${isActive ? 'text-[#2EC4B6]' : ''}`} />
-                {item.label}
+                <Shield className={`w-5 h-5 ${pathname.startsWith('/authority') ? 'text-[#2EC4B6]' : ''}`} />
+                Department Dashboard
               </Link>
-            );
-          })}
+            </>
+          )}
         </nav>
 
         {/* User info */}

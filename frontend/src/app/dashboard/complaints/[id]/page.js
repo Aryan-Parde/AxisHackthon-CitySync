@@ -217,8 +217,8 @@ export default function ComplaintDetailPage({ params }) {
               </div>
             )}
             
-            {/* Admin / Authority Controls */}
-            {(user?.role === 'admin' || user?.role === 'authority') && (
+            {/* Nodal Officer Status Controls (admin only) */}
+            {user?.role === 'admin' && (
               <div className="ml-auto flex flex-col items-end gap-2">
                 <div className="flex items-center gap-2">
                   <select
@@ -373,8 +373,8 @@ export default function ComplaintDetailPage({ params }) {
           </div>
         )}
 
-        {/* Officer Resolution Panel */}
-        {(user?.role === 'authority' || user?.role === 'admin') && complaint.status !== 'resolved' && complaint.status !== 'closed' && complaint.status !== 'fake' && (
+        {/* Dept. Officer Resolution Panel (authority only - submit photo + report) */}
+        {user?.role === 'authority' && complaint.status !== 'resolved' && complaint.status !== 'closed' && complaint.status !== 'fake' && (
           <div className="glass rounded-2xl p-6 border-2 border-[#2EC4B6]/20">
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-[#2EC4B6]" />

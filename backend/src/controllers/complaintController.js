@@ -21,8 +21,9 @@ exports.createComplaint = async (req, res, next) => {
       });
     }
 
-    // Step 1: AI Classification
-    const aiResult = await AIService.classifyComplaint(description);
+    // Step 1: AI Classification (Text + Image)
+    const imageBase64 = images && images.length > 0 ? images[0] : null;
+    const aiResult = await AIService.classifyComplaint(description, imageBase64);
 
     // If AI can't classify → prompt user for more detail
     if (aiResult.needsMoreInfo) {

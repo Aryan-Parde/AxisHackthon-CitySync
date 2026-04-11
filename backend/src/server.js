@@ -13,6 +13,7 @@ const authRoutes = require('./routes/auth');
 const complaintRoutes = require('./routes/complaints');
 const adminRoutes = require('./routes/admin');
 const mapRoutes = require('./routes/map');
+const whatsappRoutes = require('./routes/whatsapp');
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/complaints', complaintRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/map', mapRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -69,3 +71,11 @@ app.listen(PORT, () => {
 module.exports = app;
 
 
+
+
+
+
+ 
+ 
+ 
+ 

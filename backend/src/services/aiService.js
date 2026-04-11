@@ -11,331 +11,395 @@ try {
   console.warn('⚠️ Gemini AI not configured. Using fallback classification.');
 }
 
-// Issue type to department mapping (strict — NO "Other" catch-all)
-const ISSUE_DEPARTMENT_MAP = {
-  'Garbage': 'Solid Waste Management',
-  'Water Leakage': 'Public Health Engineering Department',
-  'Road Damage': 'Public Work Department',
-  'Electricity Issue': 'Electrical Department',
-  'Encroachment': 'Encroachment Department',
-  'Environment Issue': 'Environment Department',
-  'Fire Hazard': 'Fire Department',
-  'Health Issue': 'Health Department (Medicine)',
-  'Tax Issue': 'Revenue Department',
-  'Transport Issue': 'Transport Department'
+// ═══════════════════════════════════════════════════════════════
+//  DEPARTMENT ROUTING MAP — All 30 Municipal Departments
+// ═══════════════════════════════════════════════════════════════
+const DEPARTMENTS = {
+  // ── Core civic infrastructure ──
+  'Garbage':                { dept: 'Solid Waste Management',                category: 'garbage' },
+  'Water Leakage':          { dept: 'Public Health Engineering Department',  category: 'water_supply' },
+  'Road Damage':            { dept: 'Public Work Department',               category: 'road_damage' },
+  'Electricity Issue':      { dept: 'Electrical Department',                category: 'streetlight' },
+  'Encroachment':           { dept: 'Encroachment Department',              category: 'illegal_construction' },
+  'Environment Issue':      { dept: 'Environment Department',               category: 'noise' },
+  'Fire Hazard':            { dept: 'Fire Department',                      category: 'fire' },
+  'Health Issue':           { dept: 'Health Department (Medicine)',          category: 'health' },
+  'Transport Issue':        { dept: 'Transport Department',                 category: 'traffic' },
+  // ── Revenue & Tax ──
+  'Property Tax':           { dept: 'Revenue Department',                   category: 'tax' },
+  'LBT/Octroi':             { dept: 'LBT',                                  category: 'tax' },
+  'Audit Issue':            { dept: 'Revenue And Audit Department',         category: 'tax' },
+  // ── Parks & Gardens ──
+  'Garden Issue':           { dept: 'Garden Department',                    category: 'garden' },
+  // ── Property & Land ──
+  'Estate Issue':           { dept: 'Estate Department',                    category: 'estate' },
+  'Town Planning':          { dept: 'Town Planning Department',             category: 'town_planning' },
+  // ── Market & Trade ──
+  'Market Issue':           { dept: 'Market Department',                    category: 'market' },
+  'Signage Issue':          { dept: 'Skysign & Advertisement Department',   category: 'signage' },
+  // ── Social & Welfare ──
+  'Social Welfare':         { dept: 'Social Welfare Department',            category: 'welfare' },
+  'Education Issue':        { dept: 'Education Department',                 category: 'education' },
+  'Cultural Issue':         { dept: 'Cultural And Sports Department',       category: 'cultural' },
+  // ── Records & Admin ──
+  'Birth/Death Certificate':{ dept: 'Birth and Death Registration Department', category: 'records' },
+  'Records Request':        { dept: 'Central Records Department',           category: 'records' },
+  'General Administration': { dept: 'General Administration Department',    category: 'general' },
+  // ── Finance & Law ──
+  'Finance Issue':          { dept: 'Accounts and Finance Department',      category: 'finance' },
+  'Legal Issue':            { dept: 'Law Department',                       category: 'legal' },
+  // ── Public Communication ──
+  'Public Relations':       { dept: 'Public Relations Department',          category: 'pr' },
+  'IT Issue':               { dept: 'Department Of Information And Technology', category: 'it' },
+  // ── Infrastructure & Machinery ──
+  'Road Construction':      { dept: 'Hot Mix Plant Department',             category: 'road_damage' },
+  'Workshop/Vehicle':       { dept: 'Workshop Department',                  category: 'workshop' },
+  // ── Elections ──
+  'Election Issue':         { dept: 'Election Department',                  category: 'election' },
 };
 
-// Map new issue types to legacy category codes for backward compat
-const ISSUE_TO_CATEGORY = {
-  'Garbage': 'garbage',
-  'Water Leakage': 'water_supply',
-  'Road Damage': 'road_damage',
-  'Electricity Issue': 'streetlight',
-  'Encroachment': 'illegal_construction',
-  'Environment Issue': 'noise',
-  'Fire Hazard': 'other',
-  'Health Issue': 'other',
-  'Tax Issue': 'other',
-  'Transport Issue': 'traffic'
-};
-
-// Keyword normalization map (synonyms → canonical form)
-const KEYWORD_NORMALIZE = {
-  trash: 'garbage', waste: 'garbage', litter: 'garbage', dump: 'garbage', rubbish: 'garbage', debris: 'garbage', dustbin: 'garbage',
-  leak: 'water', overflow: 'water', 'pipe burst': 'water', drainage: 'water', sewage: 'water', sewer: 'water', manhole: 'water', gutter: 'water',
-  crack: 'pothole', 'broken road': 'pothole', 'damaged street': 'pothole', pit: 'pothole', crater: 'pothole', footpath: 'pothole', pavement: 'pothole',
-  wire: 'electricity', cable: 'electricity', pole: 'electricity', streetlight: 'electricity', transformer: 'electricity', bulb: 'electricity',
-  'illegal structure': 'encroachment', blockage: 'encroachment', obstruction: 'encroachment', hawker: 'encroachment', unauthorized: 'encroachment',
-  pollution: 'pollution', smoke: 'pollution', 'dirty air': 'pollution', noise: 'pollution', honking: 'pollution',
-  flames: 'fire', burning: 'fire', blaze: 'fire', inflammable: 'fire',
-  medical: 'health', illness: 'health', sick: 'health', disease: 'health', mosquito: 'health', dengue: 'health', malaria: 'health',
-  'property tax': 'tax', bill: 'tax', assessment: 'tax', revenue: 'tax',
-  traffic: 'traffic', congestion: 'traffic', vehicles: 'traffic', parking: 'traffic', signal: 'traffic', jam: 'traffic', bus: 'traffic'
+// ═══════════════════════════════════════════════════════════════
+//  CANONICAL KEYWORD MAP (raw synonym → standard token)
+// ═══════════════════════════════════════════════════════════════
+const CANONICAL = {
+  // Garbage / Solid Waste
+  trash:'garbage', waste:'garbage', litter:'garbage', dump:'garbage', rubbish:'garbage',
+  debris:'garbage', dustbin:'garbage', 'garbage bin':'garbage',
+  // Water / PHED
+  leak:'water', overflow:'water', 'pipe burst':'water', drainage:'water', sewage:'water',
+  sewer:'water', manhole:'water', gutter:'water', tap:'water', pipeline:'water',
+  // Road / PWD
+  crack:'pothole', 'broken road':'pothole', 'damaged street':'pothole', pit:'pothole',
+  crater:'pothole', footpath:'pothole', pavement:'pothole', pothole:'pothole',
+  // Electricity
+  wire:'electricity', cable:'electricity', pole:'electricity', streetlight:'electricity',
+  transformer:'electricity', bulb:'electricity', 'dark road':'electricity',
+  // Encroachment
+  'illegal structure':'encroachment', blockage:'encroachment', obstruction:'encroachment',
+  hawker:'encroachment', unauthorized:'encroachment',
+  // Environment
+  pollution:'pollution', smoke:'pollution', 'dirty air':'pollution', noise:'pollution',
+  honking:'pollution', deforestation:'pollution',
+  // Fire
+  flames:'fire', burning:'fire', blaze:'fire', inflammable:'fire',
+  // Health
+  medical:'health', illness:'health', sick:'health', disease:'health',
+  mosquito:'health', dengue:'health', malaria:'health',
+  // Transport
+  traffic:'traffic', congestion:'traffic', vehicles:'traffic', parking:'traffic',
+  signal:'traffic', jam:'traffic',
+  // Tax / Revenue
+  'property tax':'tax', bill:'tax', assessment:'tax', octroi:'tax', lbt:'tax',
+  // Garden / Parks
+  garden:'garden', park:'garden', tree:'garden', 'fallen tree':'garden', playground:'garden',
+  // Estate / Land
+  property:'estate', land:'estate', 'land dispute':'estate', plot:'estate',
+  // Town Planning
+  'building permission':'planning', 'illegal building':'planning', construction:'planning',
+  // Market
+  market:'market', vendor:'market', shop:'market', 'trade license':'market',
+  // Signage / Advertisement
+  hoarding:'signage', banner:'signage', advertisement:'signage', billboard:'signage',
+  // Social Welfare
+  pension:'welfare', ration:'welfare', welfare:'welfare', shelter:'welfare',
+  // Education
+  school:'education', 'school building':'education', education:'education',
+  // Cultural / Sports
+  sports:'cultural', 'sports ground':'cultural', festival:'cultural', cultural:'cultural',
+  // Birth / Death
+  'birth certificate':'certificate', 'death certificate':'certificate', birth:'certificate', death:'certificate',
+  // Records
+  records:'records', rti:'records', 'information request':'records',
+  // Finance
+  accounts:'finance', salary:'finance', budget:'finance',
+  // Legal
+  legal:'legal', court:'legal', 'legal notice':'legal',
+  // Road construction / Hot Mix
+  asphalt:'road_construction', tar:'road_construction', resurfacing:'road_construction',
+  // Workshop
+  vehicle:'workshop', machinery:'workshop',
+  // IT
+  website:'it', app:'it', software:'it', portal:'it',
+  // Election
+  election:'election', voting:'election', 'voter id':'election', booth:'election',
+  // Public Relations
+  complaint:'pr', grievance:'pr',
 };
 
 class AIService {
 
-  // ─── Enhanced system prompt v2 with normalization, refinement, self-validation ───
-  static get CLASSIFICATION_PROMPT() {
-    return `You are an AI system that analyzes civic issue images and routes them to the correct municipal department with high accuracy.
+  // ══════════════════════════════════════════════════
+  //  SINGLE UNIFIED CLASSIFIER  (text, image, or both)
+  // ══════════════════════════════════════════════════
+  static async classifyComplaint(text, imageBase64 = null) {
+    try {
+      if (!model) {
+        return this._fallback(text);
+      }
 
-Your task:
-1. Identify the issue in the image or text
-2. Extract keywords
-3. Normalize keywords to standard forms
-4. Refine and validate the interpretation
-5. Classify the issue
-6. Map to the correct department
+      // ── Determine input context ──
+      const hasText  = text && text.trim().length > 0;
+      const hasImage = imageBase64 && imageBase64.length > 100;
 
----
+      // ── Build a context-aware prompt ──
+      const prompt = this._buildPrompt(hasText, hasImage, text);
 
-## Step 1: Extract and Normalize Keywords (MANDATORY)
+      // ── Build Gemini parts array ──
+      const parts = [{ text: prompt }];
 
-Extract 3–6 keywords and convert them into STANDARD (canonical) keywords:
+      if (hasImage) {
+        const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+        parts.push({
+          inlineData: { mimeType: 'image/jpeg', data: cleanBase64 }
+        });
+      }
 
-Garbage:
-trash, waste, litter, dump → garbage
+      // ── Call Gemini ──
+      const result = await model.generateContent(parts);
+      const raw = result.response.text();
 
-Water Leakage:
-leak, overflow, pipe burst, drainage → water
+      // ── Extract JSON from response ──
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON in AI response');
 
-Road Damage:
-crack, broken road, damaged street → pothole
+      const parsed = JSON.parse(jsonMatch[0]);
+      return this._formatResult(parsed, text);
 
-Electricity Issue:
-wire, cable, pole, streetlight, transformer → electricity
+    } catch (error) {
+      console.error('🤖 AI Classification error:', error.message);
+      return this._fallback(text);
+    }
+  }
 
-Encroachment:
-illegal structure, blockage, obstruction → encroachment
+  // ══════════════════════════════════════════════════
+  //  CONTEXT-AWARE PROMPT BUILDER
+  // ══════════════════════════════════════════════════
+  static _buildPrompt(hasText, hasImage, text) {
+    let inputContext;
+    if (hasText && hasImage) {
+      inputContext = `INPUT: Text description + Photo attached.
+STRATEGY: Analyze the PHOTO first to identify visible issues. Then cross-reference with the text description. If the image contradicts the text, TRUST THE IMAGE. If both align, boost your confidence.`;
+    } else if (hasImage) {
+      inputContext = `INPUT: Photo only (no text description).
+STRATEGY: Rely entirely on visual analysis. Describe what you see, extract keywords from the image content, and classify based on the most prominent civic issue visible.`;
+    } else {
+      inputContext = `INPUT: Text description only (no photo).
+STRATEGY: Parse the text carefully. Look for specific civic issue indicators. Weight action words ("broken", "overflowing", "burning") heavily.`;
+    }
 
-Environment Issue:
-pollution, smoke, dirty air → pollution
+    return `You are CitySync AI — a municipal complaint classifier for Indian cities with 30 departments.
 
-Fire Hazard:
-flames, burning → fire
+${inputContext}
 
-Health Issue:
-medical, illness, sick → health
+══════════════════════════════════════
+TASK: Classify this civic complaint.
+══════════════════════════════════════
 
-Transport Issue:
-traffic, congestion, vehicles → traffic
+STEP 1 — OBSERVE
+${hasImage ? '• Scan the entire image. What objects, damage, or hazards do you see?' : '• Read the complaint text carefully.'}
+${hasText ? `• Citizen wrote: "${text}"` : '• No text provided — classify from image alone.'}
 
-Tax Issue:
-property tax, bill → tax
+STEP 2 — EXTRACT KEYWORDS (3–6 normalized tokens)
+Use ONLY these canonical keywords:
+  garbage, water, pothole, electricity, encroachment, pollution, fire, health,
+  traffic, tax, garden, estate, planning, market, signage, welfare, education,
+  cultural, certificate, records, finance, legal, road_construction, workshop,
+  it, election, pr
 
-IMPORTANT:
-- ONLY output normalized keywords (e.g., "garbage", not "trash")
+Map raw observations → canonical form:
+  trash/waste/litter/dump/dustbin → garbage
+  leak/pipe/sewage/drain/overflow/tap → water
+  crack/hole/broken road/footpath → pothole
+  wire/pole/streetlight/transformer → electricity
+  illegal/hawker/obstruction → encroachment
+  smoke/noise/dirty air → pollution
+  flames/burning/blaze → fire
+  disease/mosquito/medical/sick → health
+  traffic/congestion/parking/signal → traffic
+  property tax/bill/assessment/octroi → tax
+  park/tree/fallen tree/playground → garden
+  land/plot/property dispute → estate
+  building permission/illegal building → planning
+  vendor/shop/trade license → market
+  hoarding/banner/billboard → signage
+  pension/ration/shelter → welfare
+  school/school building → education
+  sports ground/festival → cultural
+  birth certificate/death certificate → certificate
+  RTI/records request → records
+  asphalt/tar/resurfacing → road_construction
+  vehicle repair/machinery → workshop
+  website/app/portal → it
+  voting/voter ID/booth → election
 
----
+STEP 3 — CLASSIFY (pick exactly ONE)
+  Garbage | Water Leakage | Road Damage | Electricity Issue |
+  Encroachment | Environment Issue | Fire Hazard | Health Issue |
+  Transport Issue | Property Tax | LBT/Octroi | Audit Issue |
+  Garden Issue | Estate Issue | Town Planning | Market Issue |
+  Signage Issue | Social Welfare | Education Issue | Cultural Issue |
+  Birth/Death Certificate | Records Request | General Administration |
+  Finance Issue | Legal Issue | Road Construction |
+  Workshop/Vehicle | IT Issue | Election Issue | Public Relations | Other
 
-## Step 2: Context Refinement (VERY IMPORTANT)
+STEP 4 — MAP TO DEPARTMENT (30 departments)
+  Garbage → Solid Waste Management
+  Water Leakage → Public Health Engineering Department
+  Road Damage → Public Work Department
+  Electricity Issue → Electrical Department
+  Encroachment → Encroachment Department
+  Environment Issue → Environment Department
+  Fire Hazard → Fire Department
+  Health Issue → Health Department (Medicine)
+  Transport Issue → Transport Department
+  Property Tax → Revenue Department
+  LBT/Octroi → LBT
+  Audit Issue → Revenue And Audit Department
+  Garden Issue → Garden Department
+  Estate Issue → Estate Department
+  Town Planning → Town Planning Department
+  Market Issue → Market Department
+  Signage Issue → Skysign & Advertisement Department
+  Social Welfare → Social Welfare Department
+  Education Issue → Education Department
+  Cultural Issue → Cultural And Sports Department
+  Birth/Death Certificate → Birth and Death Registration Department
+  Records Request → Central Records Department
+  General Administration → General Administration Department
+  Finance Issue → Accounts and Finance Department
+  Legal Issue → Law Department
+  Public Relations → Public Relations Department
+  IT Issue → Department Of Information And Technology
+  Road Construction → Hot Mix Plant Department
+  Workshop/Vehicle → Workshop Department
+  Election Issue → Election Department
+  Other → Unclassified
 
-Before classification:
-- Re-evaluate the image using extracted keywords
-- Check if multiple issues are present
-- Identify the PRIMARY issue only
-- Ignore weak or unrelated signals
-- If keywords conflict, prioritize the most visible/severe issue
+STEP 5 — SELF-CHECK
+  • Do keywords match the issue_type?
+  • Does issue_type map to the right department?
+  • Fix any mismatches before outputting.
+  • If genuinely unclear → issue_type = "Other"
 
----
+STEP 6 — CONFIDENCE
+  ${hasImage ? '• Clear photo + matching text → 0.85–0.95' : ''}
+  ${hasImage ? '• Clear photo, vague/no text → 0.70–0.85' : ''}
+  ${hasText && !hasImage ? '• Detailed text, no photo → 0.65–0.80' : ''}
+  • Ambiguous input → 0.40–0.60
+  • Irrelevant / cannot tell → below 0.40
 
-## Step 3: Issue Type Classification (STRICT)
-
-Choose ONLY one:
-- Garbage
-- Water Leakage
-- Road Damage
-- Electricity Issue
-- Encroachment
-- Environment Issue
-- Fire Hazard
-- Health Issue
-- Tax Issue
-- Transport Issue
-- Other
-
----
-
-## Step 4: Department Mapping (STRICT)
-
-Garbage → Solid Waste Management
-Water Leakage → Public Health Engineering Department
-Road Damage → Public Work Department
-Electricity Issue → Electrical Department
-Encroachment → Encroachment Department
-Environment Issue → Environment Department
-Fire Hazard → Fire Department
-Health Issue → Health Department (Medicine)
-Tax Issue → Revenue Department
-Transport Issue → Transport Department
-Other → NONE (set department to "Unclassified")
-
----
-
-## Step 5: Self-Validation (CRITICAL)
-
-Before final output:
-- Ensure keywords align with issue_type
-- Ensure issue_type correctly maps to department
-- If mismatch detected → correct it
-- If uncertainty remains → set issue_type = "Other"
-
----
-
-## Step 6: Confidence Scoring
-
-- High clarity (clear visible issue) → 0.75–0.95
-- Moderate clarity → 0.6–0.75
-- Low clarity / ambiguity → below 0.6
-
----
-
-## Step 7: Output (STRICT JSON ONLY)
-
+OUTPUT: Respond with ONLY this JSON — nothing else:
 {
   "keywords": ["k1", "k2", "k3"],
   "issue_type": "IssueType",
   "department": "DepartmentName",
   "confidence": 0.0
-}
-
----
-
-## Rules (MANDATORY)
-- DO NOT output anything except JSON
-- DO NOT include explanations
-- DO NOT use raw synonyms — only normalized keywords
-- DO NOT invent categories or departments
-- ALWAYS refine before deciding
-- If unsure → issue_type = "Other"
-- If issue_type is "Other" → department = "Unclassified"`;
+}`;
   }
 
-  // ─── Classify complaint from text (+ optional image) ───
-  static async classifyComplaint(text, imageBase64 = null) {
-    try {
-      if (!model) {
-        return this.fallbackClassification(text);
-      }
+  // ══════════════════════════════════════════════════
+  //  FORMAT AI RESPONSE → STANDARD RESULT OBJECT
+  // ══════════════════════════════════════════════════
+  static _formatResult(parsed, text) {
+    const issueType     = parsed.issue_type || 'Other';
+    const deptEntry     = DEPARTMENTS[issueType];
+    const isUnclassified = !deptEntry;
+    const confidence    = Math.max(0, Math.min(1, parsed.confidence || 0));
 
-      // If an image is provided, use image-based classification
-      if (imageBase64) {
-        return this.classifyComplaintImage(text, imageBase64);
-      }
-
-      const prompt = `${this.CLASSIFICATION_PROMPT}
-
-Citizen complaint text: "${text}"`;
-
-      const result = await model.generateContent(prompt);
-      const response = result.response.text();
-
-      let jsonStr = response;
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (jsonMatch) jsonStr = jsonMatch[0];
-
-      const parsed = JSON.parse(jsonStr);
-      return this._buildResult(parsed, text);
-    } catch (error) {
-      console.error('AI Classification error:', error.message);
-      return this.fallbackClassification(text);
-    }
-  }
-
-  // ─── Classify complaint from image using Gemini vision ───
-  static async classifyComplaintImage(text, imageBase64) {
-    try {
-      if (!model) {
-        return this.fallbackClassification(text);
-      }
-
-      const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
-
-      const parts = [
-        { text: `${this.CLASSIFICATION_PROMPT}\n\nCitizen complaint text: "${text || 'See attached image'}"` },
-        {
-          inlineData: {
-            mimeType: 'image/jpeg',
-            data: cleanBase64
-          }
-        }
-      ];
-
-      const result = await model.generateContent(parts);
-      const response = result.response.text();
-
-      let jsonStr = response;
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (jsonMatch) jsonStr = jsonMatch[0];
-
-      const parsed = JSON.parse(jsonStr);
-      return this._buildResult(parsed, text || 'Image-based classification');
-    } catch (error) {
-      console.error('AI Image Classification error:', error.message);
-      return this.fallbackClassification(text || 'image complaint');
-    }
-  }
-
-  // ─── Build a standardized result, flagging unclassifiable complaints ───
-  static _buildResult(parsed, text) {
-    const issueType = parsed.issue_type;
-    const isUnclassified = issueType === 'Other' || !ISSUE_DEPARTMENT_MAP[issueType];
-    const department = isUnclassified ? null : ISSUE_DEPARTMENT_MAP[issueType];
-    const category = isUnclassified ? 'other' : (ISSUE_TO_CATEGORY[issueType] || 'other');
-    const confidence = parsed.confidence || 0;
-
-    // Normalize keywords using the canonical map
-    const normalizedKeywords = (parsed.keywords || []).map(kw => {
-      const lower = kw.toLowerCase();
-      return KEYWORD_NORMALIZE[lower] || lower;
-    });
-    // Deduplicate
-    const uniqueKeywords = [...new Set(normalizedKeywords)];
+    // Normalize + deduplicate keywords
+    const keywords = [...new Set(
+      (parsed.keywords || []).map(kw => {
+        const lower = kw.toLowerCase();
+        return CANONICAL[lower] || lower;
+      })
+    )].slice(0, 6);
 
     return {
-      success: true,
-      needsMoreInfo: isUnclassified,
-      category,
-      issue_type: issueType,
-      department,
+      success:        true,
+      needsMoreInfo:  isUnclassified,
+      category:       deptEntry?.category || 'other',
+      issue_type:     issueType,
+      department:     deptEntry?.dept || null,
       confidence,
-      keywords: uniqueKeywords.slice(0, 6),
+      keywords,
       suggestedTitle: isUnclassified ? null : `${issueType} reported`,
-      severity: confidence >= 0.8 ? 'high' : confidence >= 0.6 ? 'medium' : 'low',
-      summary: text ? text.substring(0, 100) : ''
+      severity:       confidence >= 0.8 ? 'high' : confidence >= 0.6 ? 'medium' : 'low',
+      summary:        text ? text.substring(0, 100) : 'Image-based classification',
     };
   }
 
-  // ─── Fallback keyword-based classification (uses new issue types) ───
-  static fallbackClassification(text) {
+  // ══════════════════════════════════════════════════
+  //  OFFLINE FALLBACK (no Gemini / API failure)
+  // ══════════════════════════════════════════════════
+  static _fallback(text) {
     const lower = (text || '').toLowerCase();
-    const issueKeywords = {
-      'Garbage': ['garbage', 'trash', 'waste', 'dump', 'litter', 'dustbin', 'rubbish', 'debris'],
-      'Water Leakage': ['water', 'tap', 'pipeline', 'water supply', 'drinking water', 'pipe burst', 'leakage', 'sewage', 'sewer', 'manhole', 'drain', 'gutter', 'sewerage'],
-      'Road Damage': ['pothole', 'pit', 'hole', 'crater', 'road damage', 'footpath', 'divider', 'broken road', 'crack', 'pavement', 'road broken'],
-      'Electricity Issue': ['streetlight', 'street light', 'lamp', 'bulb', 'dark road', 'no light', 'electric', 'power', 'wire', 'transformer'],
-      'Encroachment': ['illegal', 'unauthorized', 'encroachment', 'building violation', 'hawker'],
-      'Environment Issue': ['noise', 'loud', 'pollution', 'honking', 'tree', 'deforestation', 'smoke', 'air quality'],
-      'Fire Hazard': ['fire', 'blaze', 'burn', 'inflammable', 'smoke', 'hazard'],
-      'Health Issue': ['disease', 'epidemic', 'mosquito', 'dengue', 'malaria', 'hospital', 'medical'],
-      'Tax Issue': ['tax', 'revenue', 'property tax', 'bill', 'assessment'],
-      'Transport Issue': ['traffic', 'signal', 'parking', 'jam', 'blockage', 'bus', 'transport', 'zebra crossing', 'road blockage']
+
+    // keyword → issue type lookup (all 30 departments)
+    const PATTERNS = {
+      'Garbage':            ['garbage','trash','waste','dump','litter','dustbin','rubbish','debris'],
+      'Water Leakage':      ['water','tap','pipeline','pipe burst','leakage','sewage','sewer','manhole','drain','gutter','overflow'],
+      'Road Damage':        ['pothole','pit','hole','crater','road damage','footpath','divider','broken road','crack','pavement'],
+      'Electricity Issue':  ['streetlight','street light','lamp','bulb','dark road','no light','electric','power','wire','transformer'],
+      'Encroachment':       ['illegal','unauthorized','encroachment','building violation','hawker'],
+      'Environment Issue':  ['noise','loud','pollution','honking','deforestation','air quality'],
+      'Fire Hazard':        ['fire','blaze','burn','inflammable','hazard'],
+      'Health Issue':       ['disease','epidemic','mosquito','dengue','malaria','hospital','medical'],
+      'Transport Issue':    ['traffic','signal','parking','jam','blockage','bus','transport','zebra crossing'],
+      'Property Tax':       ['property tax','tax bill','assessment','tax notice'],
+      'LBT/Octroi':         ['lbt','octroi','local body tax'],
+      'Audit Issue':        ['audit','revenue audit','financial audit'],
+      'Garden Issue':       ['garden','park','fallen tree','playground','tree cutting','tree fell'],
+      'Estate Issue':       ['estate','land','land dispute','plot','property dispute'],
+      'Town Planning':      ['building permission','town planning','illegal building','construction permit','building plan'],
+      'Market Issue':       ['market','vendor','shop','trade license','commercial'],
+      'Signage Issue':      ['hoarding','banner','advertisement','billboard','signage','skysign'],
+      'Social Welfare':     ['pension','ration','welfare','shelter','bpl','poor'],
+      'Education Issue':    ['school','school building','education','teacher'],
+      'Cultural Issue':     ['sports','sports ground','festival','cultural','stadium'],
+      'Birth/Death Certificate': ['birth certificate','death certificate','birth registration','death registration'],
+      'Records Request':    ['records','rti','information request','record copy'],
+      'General Administration': ['administration','admin','general complaint','miscellaneous'],
+      'Finance Issue':      ['accounts','salary','budget','payment','finance'],
+      'Legal Issue':        ['legal','court','legal notice','advocate','law'],
+      'Public Relations':   ['grievance','public complaint','media','press','pr'],
+      'IT Issue':           ['website','app','portal','software','it issue','online'],
+      'Road Construction':  ['asphalt','tar','resurfacing','road construction','hot mix'],
+      'Workshop/Vehicle':   ['vehicle repair','machinery','workshop','municipal vehicle'],
+      'Election Issue':     ['election','voting','voter id','booth','poll'],
     };
 
     let bestIssue = null;
-    let maxMatches = 0;
-    const foundKeywords = [];
+    let bestScore = 0;
+    let matchedWords = [];
 
-    for (const [issueType, keywords] of Object.entries(issueKeywords)) {
-      const matches = keywords.filter(kw => lower.includes(kw));
-      if (matches.length > maxMatches) {
-        maxMatches = matches.length;
-        bestIssue = issueType;
-        foundKeywords.length = 0;
-        foundKeywords.push(...matches);
+    for (const [type, words] of Object.entries(PATTERNS)) {
+      const hits = words.filter(w => lower.includes(w));
+      if (hits.length > bestScore) {
+        bestScore = hits.length;
+        bestIssue = type;
+        matchedWords = hits;
       }
     }
 
-    const isUnclassified = !bestIssue || maxMatches === 0;
-    const department = isUnclassified ? null : ISSUE_DEPARTMENT_MAP[bestIssue];
-    const category = isUnclassified ? 'other' : (ISSUE_TO_CATEGORY[bestIssue] || 'other');
-    const confidence = maxMatches > 0 ? Math.min(0.5 + maxMatches * 0.15, 0.9) : 0.2;
+    const deptEntry     = bestIssue ? DEPARTMENTS[bestIssue] : null;
+    const isUnclassified = !deptEntry;
+    const confidence    = bestScore > 0 ? Math.min(0.5 + bestScore * 0.15, 0.85) : 0.15;
 
-    // Normalize found keywords
-    const normalizedKeywords = foundKeywords.map(kw => KEYWORD_NORMALIZE[kw] || kw);
-    const uniqueKeywords = [...new Set(normalizedKeywords)];
+    const keywords = [...new Set(
+      matchedWords.map(w => CANONICAL[w] || w)
+    )].slice(0, 6);
 
     return {
-      success: true,
-      needsMoreInfo: isUnclassified,
-      category,
-      issue_type: bestIssue || 'Other',
-      department,
+      success:        true,
+      needsMoreInfo:  isUnclassified,
+      category:       deptEntry?.category || 'other',
+      issue_type:     bestIssue || 'Other',
+      department:     deptEntry?.dept || null,
       confidence,
-      keywords: uniqueKeywords.slice(0, 6),
+      keywords,
       suggestedTitle: isUnclassified ? null : `${bestIssue} reported`,
-      severity: confidence >= 0.7 ? 'high' : confidence >= 0.5 ? 'medium' : 'low',
-      summary: text ? text.substring(0, 100) : ''
+      severity:       confidence >= 0.7 ? 'high' : confidence >= 0.5 ? 'medium' : 'low',
+      summary:        text ? text.substring(0, 100) : '',
     };
   }
 

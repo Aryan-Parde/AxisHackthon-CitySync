@@ -7,7 +7,7 @@ import { complaintsAPI } from '@/lib/api';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, MapPin, Clock, ThumbsUp, Users, AlertTriangle,
-  CheckCircle, Loader2, ChevronRight, AlertOctagon, Camera, FileText, ShieldCheck
+  CheckCircle, Loader2, ChevronRight, AlertOctagon, Camera, FileText, ShieldCheck, Sparkles
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -372,6 +372,24 @@ export default function ComplaintDetailPage({ params }) {
                   <p className="text-xs text-[var(--text-dim)] capitalize">{key}</p>
                   <p className="text-lg font-bold text-[var(--text-primary)]">{value}</p>
                 </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* AI Extracted Keywords */}
+        {complaint.aiMetadata?.keywords && complaint.aiMetadata.keywords.length > 0 && (
+          <div className="glass rounded-2xl p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-400" />
+              AI Extracted Context
+            </h2>
+            <p className="text-xs text-[var(--text-dim)] mb-4">Keywords auto-extracted by AI classifier from the report and image</p>
+            <div className="flex flex-wrap gap-2">
+              {complaint.aiMetadata.keywords.map((kw, i) => (
+                <span key={i} className="px-3 py-1.5 bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded-lg text-xs font-semibold tracking-wide capitalize shadow-sm shadow-indigo-500/5">
+                  {kw}
+                </span>
               ))}
             </div>
           </div>

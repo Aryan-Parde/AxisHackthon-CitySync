@@ -31,7 +31,24 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-
+  const handleAutoLogin = async (demoMobile) => {
+    setLoading(true);
+    try {
+      await authAPI.sendOTP(demoMobile);
+      const verifyRes = await authAPI.verifyOTP(demoMobile, '123456');
+      
+      const { token, user } = verifyRes.data.data;
+      localStorage.setItem('citysync_token', token);
+      localStorage.setItem('citysync_user', JSON.stringify(user));
+      
+      toast.success(`Logged in as ${user.role}!`);
+      window.location.href = '/dashboard';
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Auto login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--bg-darker)] relative overflow-hidden px-4">
       {/* Background effects */}
@@ -106,9 +123,29 @@ export default function LoginPage() {
 
         {/* Demo hint */}
         <div className="mt-4 text-center">
-          <p className="text-xs text-[var(--text-dim)]">
-            💡 Demo: Use any mobile number. OTP appears in backend console.
+          <p className="text-xs text-[var(--text-dim)] mb-3">
+            💡 One-Click Auto Logins (Fast Testing):
           </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            <button 
+              onClick={() => handleAutoLogin('9876500000')}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
+            >
+              Citizen
+            </button>
+            <button 
+              onClick={() => handleAutoLogin('8000000000')}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 transition-colors"
+            >
+              Roads Authority
+            </button>
+            <button 
+              onClick={() => handleAutoLogin('8000000001')}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition-colors"
+            >
+              Water Authority
+            </button>
+          </div>
         </div>
       </motion.div>
     </div>

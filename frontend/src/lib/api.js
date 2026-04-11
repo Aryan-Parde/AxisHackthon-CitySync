@@ -62,7 +62,7 @@ export const complaintsAPI = {
 
 // Admin API
 export const adminAPI = {
-  getDashboard: () => api.get('/admin/dashboard'),
+  getDashboard: (params) => api.get('/admin/dashboard', { params }),
   getComplaints: (params) => api.get('/admin/complaints', { params }),
   getAnalytics: (params) => api.get('/admin/analytics', { params }),
   getDepartments: () => api.get('/admin/departments'),

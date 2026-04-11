@@ -7,7 +7,7 @@ import { complaintsAPI } from '@/lib/api';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, MapPin, Clock, ThumbsUp, Users, AlertTriangle,
-  CheckCircle, Loader2, ChevronRight
+  CheckCircle, Loader2, ChevronRight, AlertOctagon
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -25,6 +25,7 @@ const statusConfig = {
   resolved: { color: 'text-emerald-400', icon: CheckCircle, label: 'Resolved' },
   escalated: { color: 'text-red-400', icon: AlertTriangle, label: 'Escalated' },
   closed: { color: 'text-gray-400', icon: CheckCircle, label: 'Closed' },
+  fake: { color: 'text-red-500 font-bold', icon: AlertOctagon, label: 'Fake / Rejected' },
 };
 
 const categoryIcons = {
@@ -39,6 +40,8 @@ export default function ComplaintDetailPage({ params }) {
   const [complaint, setComplaint] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [showStatusNote, setShowStatusNote] = useState(false);
+  const [statusNote, setStatusNote] = useState('');
   const router = useRouter();
 
   useEffect(() => {
@@ -67,21 +70,33 @@ export default function ComplaintDetailPage({ params }) {
     }
   };
 
-  const handleStatusUpdate = async (newStatus) => {
+  const handleStatusUpdate = async (newStatus, customNote = null) => {
     if (!newStatus || newStatus === complaint.status) return;
     
     setUpdating(true);
     try {
       const res = await complaintsAPI.updateStatus(id, {
         status: newStatus,
-        note: `Status updated to ${newStatus?.replace('_', ' ')} by admin`
+        note: customNote || `Status updated to ${newStatus?.replace('_', ' ')} by authority`
       });
       setComplaint(res.data.data);
       toast.success('Status updated successfully');
+      setShowStatusNote(false);
+      setStatusNote('');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update status');
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleStatusDropdownChange = (e) => {
+    const newStatus = e.target.value;
+    if (newStatus === 'fake') {
+      setShowStatusNote(true);
+    } else {
+      setShowStatusNote(false);
+      handleStatusUpdate(newStatus);
     }
   };
 
@@ -169,23 +184,52 @@ export default function ComplaintDetailPage({ params }) {
               </div>
             )}
             
-            {/* Admin Controls */}
-            {user?.role === 'admin' && (
-              <div className="ml-auto flex items-center gap-2">
-                <select
-                  value={complaint.status}
-                  onChange={(e) => handleStatusUpdate(e.target.value)}
-                  disabled={updating}
-                  className="px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border)] text-sm text-[var(--text-primary)] outline-none focus:border-indigo-500"
-                >
-                  <option value="submitted">Submitted</option>
-                  <option value="under_review">Under Review</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="resolved">Resolved</option>
-                  <option value="escalated">Escalated</option>
-                  <option value="closed">Closed</option>
-                </select>
-                {updating && <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />}
+            {/* Admin / Authority Controls */}
+            {(user?.role === 'admin' || user?.role === 'authority') && (
+              <div className="ml-auto flex flex-col items-end gap-2">
+                <div className="flex items-center gap-2">
+                  <select
+                    value={complaint.status}
+                    onChange={handleStatusDropdownChange}
+                    disabled={updating}
+                    className="px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border)] text-sm text-[var(--text-primary)] outline-none focus:border-indigo-500"
+                  >
+                    <option value="submitted">Submitted</option>
+                    <option value="under_review">Under Review</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="escalated">Escalated</option>
+                    <option value="fake">Fake / Rejected</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                  {updating && <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />}
+                </div>
+                
+                {showStatusNote && (
+                  <div className="mt-2 flex flex-col gap-2 w-72">
+                    <textarea
+                      placeholder="Reason for marking as fake..."
+                      value={statusNote}
+                      onChange={(e) => setStatusNote(e.target.value)}
+                      className="w-full bg-[var(--bg-card-hover)] text-sm text-white p-2 rounded-lg border border-[var(--border)] focus:border-red-500 outline-none resize-none"
+                      rows={2}
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button 
+                        onClick={() => setShowStatusNote(false)}
+                        className="px-3 py-1 text-xs text-[var(--text-muted)] hover:text-white transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        onClick={() => handleStatusUpdate('fake', statusNote || 'Marked as fake/invalid by authorities')}
+                        className="px-3 py-1 text-xs bg-red-500 hover:bg-red-600 text-white font-medium rounded-md transition-colors"
+                      >
+                        Submit
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

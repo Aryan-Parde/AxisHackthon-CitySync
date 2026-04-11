@@ -28,7 +28,7 @@ const statusColors = {
   closed: 'bg-gray-500/15 text-gray-400',
 };
 
-export default function AdminDashboardPage() {
+export default function AuthorityDashboardPage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [stats, setStats] = useState(null);
   const [complaints, setComplaints] = useState([]);
@@ -46,9 +46,13 @@ export default function AdminDashboardPage() {
 
   const fetchData = async () => {
     try {
+      const deptId = user?.department?._id || user?.department; // fallback if string
+      const params = deptId ? { department: deptId } : {};
+      
       const [statsRes, complaintsRes, deptsRes] = await Promise.all([
-        adminAPI.getDashboard(),
-        adminAPI.getComplaints({ limit: 10, sortBy: 'createdAt', sortOrder: 'desc' }),
+        adminAPI.getDashboard(params),
+        adminAPI.getComplaints({ ...params, limit: 10, sortBy: 'createdAt', sortOrder: 'desc' }),
+        // For authority, maybe we don't need all departments, but let's keep it for UI structure or filter later
         adminAPI.getDepartments(),
       ]);
       setStats(statsRes.data.data);
@@ -95,7 +99,12 @@ export default function AdminDashboardPage() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center">
               <MapPin className="w-4 h-4 text-white" />
             </div>
-            <h1 className="text-lg font-bold gradient-text">Admin Dashboard</h1>
+            <h1 className="text-lg font-bold gradient-text">Authority Workspace</h1>
+            {user?.department?.name && (
+              <span className="ml-2 text-sm text-[var(--text-muted)] bg-[var(--bg-card)] px-2 py-1 rounded">
+                {user.department.name}
+              </span>
+            )}
           </div>
           <Link
             href="/admin/analytics"
@@ -175,7 +184,7 @@ export default function AdminDashboardPage() {
         <div className="glass rounded-2xl p-5">
           <h2 className="text-lg font-semibold text-white mb-4">
             <Building2 className="w-5 h-5 inline mr-2" />
-            Authority Performance
+            Authority Branches Performance
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

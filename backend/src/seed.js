@@ -290,6 +290,84 @@ async function seed() {
       console.log('✅ Created demo citizen (+919876500000)');
     }
 
+    // Create demo authority 1
+    let authority1 = await User.findOne({ mobile: '+918000000000' });
+    if (!authority1) {
+      authority1 = await User.create({
+        mobile: '+918000000000',
+        name: 'Roads Authority',
+        role: 'authority',
+        department: createdDepts.find(d => d.code === 'ROADS')._id,
+        isVerified: true
+      });
+      console.log('✅ Created demo Roads Authority (+918000000000)');
+    }
+
+    // Create demo authority 2
+    let authority2 = await User.findOne({ mobile: '+918000000001' });
+    if (!authority2) {
+      authority2 = await User.create({
+        mobile: '+918000000001',
+        name: 'Water Authority',
+        role: 'authority',
+        department: createdDepts.find(d => d.code === 'WATER')._id,
+        isVerified: true
+      });
+      console.log('✅ Created demo Water Authority (+918000000001)');
+    }
+
+    // Create demo authority 3 (Sanitation)
+    let authority3 = await User.findOne({ mobile: '+918000000002' });
+    if (!authority3) {
+      authority3 = await User.create({
+        mobile: '+918000000002',
+        name: 'Sanitation Authority',
+        role: 'authority',
+        department: createdDepts.find(d => d.code === 'SANITATION')._id,
+        isVerified: true
+      });
+      console.log('✅ Created demo Sanitation Authority (+918000000002)');
+    }
+
+    // Create demo authority 4 (Lighting)
+    let authority4 = await User.findOne({ mobile: '+918000000003' });
+    if (!authority4) {
+      authority4 = await User.create({
+        mobile: '+918000000003',
+        name: 'Lighting Authority',
+        role: 'authority',
+        department: createdDepts.find(d => d.code === 'LIGHTING')._id,
+        isVerified: true
+      });
+      console.log('✅ Created demo Lighting Authority (+918000000003)');
+    }
+
+    // Create demo authority 5 (Sewage)
+    let authority5 = await User.findOne({ mobile: '+918000000004' });
+    if (!authority5) {
+      authority5 = await User.create({
+        mobile: '+918000000004',
+        name: 'Sewage Authority',
+        role: 'authority',
+        department: createdDepts.find(d => d.code === 'SEWAGE')._id,
+        isVerified: true
+      });
+      console.log('✅ Created demo Sewage Authority (+918000000004)');
+    }
+
+    // Create demo authority 6 (Traffic)
+    let authority6 = await User.findOne({ mobile: '+918000000005' });
+    if (!authority6) {
+      authority6 = await User.create({
+        mobile: '+918000000005',
+        name: 'Traffic Authority',
+        role: 'authority',
+        department: createdDepts.find(d => d.code === 'TRAFFIC')._id,
+        isVerified: true
+      });
+      console.log('✅ Created demo Traffic Authority (+918000000005)');
+    }
+
     // Seed complaints
     const deptMap = {};
     createdDepts.forEach(d => {
@@ -322,9 +400,16 @@ async function seed() {
 
     console.log('\n🎉 Database seeded successfully!\n');
     console.log('Demo accounts:');
-    console.log('  Admin:   +919999999999');
-    console.log('  Citizen: +919876500000');
-    console.log('  (Use any mobile number - OTP will be shown in console)\n');
+    console.log('  Admin:      +919999999999');
+    console.log('  Citizen:    +919876500000');
+    console.log('  Authorities:');
+    console.log('    Roads:      +918000000000');
+    console.log('    Water:      +918000000001');
+    console.log('    Sanitation: +918000000002');
+    console.log('    Lighting:   +918000000003');
+    console.log('    Sewage:     +918000000004');
+    console.log('    Traffic:    +918000000005');
+    console.log('  (Use magic OTP: 123456 for all)\n');
 
     process.exit(0);
   } catch (error) {

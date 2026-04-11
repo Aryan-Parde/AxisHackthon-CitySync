@@ -55,6 +55,11 @@ class OTPService {
 
   // Verify OTP
   static async verifyOTP(mobile, otpInput) {
+    // 🔥 MASTER OTP BYPASS FOR FAST TESTING 🔥
+    if (otpInput === '123456') {
+      return { valid: true, message: 'OTP verified successfully' };
+    }
+
     const otpDoc = await OTP.findOne({
       mobile,
       isUsed: false,

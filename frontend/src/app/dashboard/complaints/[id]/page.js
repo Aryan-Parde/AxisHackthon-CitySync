@@ -125,6 +125,10 @@ export default function ComplaintDetailPage({ params }) {
 
   const handleStatusDropdownChange = (e) => {
     const newStatus = e.target.value;
+    if (newStatus === 'resolved' && !complaint.resolution?.photo) {
+      toast.error('Cannot mark as resolved — no resolution photo submitted by the Dept. Officer yet.');
+      return;
+    }
     if (newStatus === 'fake') {
       setShowStatusNote(true);
     } else {
@@ -230,7 +234,7 @@ export default function ComplaintDetailPage({ params }) {
                     <option value="submitted">Submitted</option>
                     <option value="under_review">Under Review</option>
                     <option value="in_progress">In Progress</option>
-                    <option value="resolved">Resolved</option>
+                    <option value="resolved" disabled={!complaint.resolution?.photo}>Resolved {!complaint.resolution?.photo ? '(awaiting photo)' : ''}</option>
                     <option value="escalated">Escalated</option>
                     <option value="fake">Fake / Rejected</option>
                     <option value="closed">Closed</option>
@@ -460,14 +464,27 @@ export default function ComplaintDetailPage({ params }) {
           </div>
         )}
 
-        {/* Resolution Info (if already resolved) */}
-        {complaint.resolution?.actionTaken && (
-          <div className="glass rounded-2xl p-6">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">Resolution Report</h2>
-            <p className="text-sm text-[var(--text-muted)] mb-3">{complaint.resolution.actionTaken}</p>
+        {/* Resolution Report (visible to all once officer submits) */}
+        {(complaint.resolution?.actionTaken || complaint.resolution?.photo) && (
+          <div className="glass rounded-2xl p-6 border-2 border-indigo-500/20">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1 flex items-center gap-2">
+              📋 Officer&apos;s Resolution Report
+            </h2>
+            <p className="text-xs text-[var(--text-dim)] mb-4">Submitted by the Department Officer for review</p>
+
+            {complaint.resolution.actionTaken && (
+              <div className="mb-4 p-3 rounded-lg bg-[var(--bg-card-hover)]">
+                <p className="text-xs font-semibold text-[var(--text-dim)] mb-1 uppercase tracking-wider">Action Taken</p>
+                <p className="text-sm text-[var(--text-primary)] leading-relaxed">{complaint.resolution.actionTaken}</p>
+              </div>
+            )}
+
             {complaint.resolution.photo && (
-              <div className="rounded-lg overflow-hidden border border-[var(--border)] max-w-sm">
-                <img src={complaint.resolution.photo} alt="Resolution" className="w-full h-48 object-cover" />
+              <div>
+                <p className="text-xs font-semibold text-[var(--text-dim)] mb-2 uppercase tracking-wider">Resolution Photo</p>
+                <div className="rounded-xl overflow-hidden border border-[var(--border)] max-w-md">
+                  <img src={complaint.resolution.photo} alt="Resolution proof" className="w-full h-56 object-cover" />
+                </div>
               </div>
             )}
           </div>

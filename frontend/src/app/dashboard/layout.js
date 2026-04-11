@@ -25,6 +25,7 @@ const officerNav = [
 
 const nodalNav = [
   { href: '/dashboard/overview', icon: Eye, label: 'City Overview' },
+  { href: '/dashboard/all-complaints', icon: List, label: 'All Complaints' },
   { href: '/admin', icon: Shield, label: 'Admin Dashboard' },
   { href: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
   { href: '/dashboard/map', icon: Map, label: 'City Map' },

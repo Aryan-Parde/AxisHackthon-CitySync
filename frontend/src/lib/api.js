@@ -33,7 +33,7 @@ api.interceptors.response.use(
         localStorage.removeItem('citysync_token');
         localStorage.removeItem('citysync_user');
         // Only redirect if not already on auth page
-        if (!window.location.pathname.startsWith('/auth')) {
+        if (!window.location.pathname.startsWith('/auth') && !window.location.pathname.startsWith('/map')) {
           window.location.href = '/auth/login';
         }
       }

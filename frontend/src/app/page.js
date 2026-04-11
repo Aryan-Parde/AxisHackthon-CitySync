@@ -166,7 +166,7 @@ export default function LandingPage() {
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
-                href="/dashboard/map"
+                href="/map"
                 className="px-8 py-3.5 rounded-xl border border-[var(--border)] text-[var(--text-secondary)] font-medium hover:bg-[var(--bg-card)] hover:border-[var(--primary)] transition-all flex items-center gap-2"
               >
                 <MapPin className="w-5 h-5 text-[var(--primary)]" />

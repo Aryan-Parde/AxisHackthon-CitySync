@@ -9,13 +9,13 @@ const {
 } = require('../controllers/adminController');
 const { protect, authorize } = require('../middleware/auth');
 
-router.use(protect);
-
-// Allow all authenticated users to view dashboard and analytics for hackathon demo
+// Public routes for hackathon demo
 router.get('/dashboard', getDashboardStats);
 router.get('/complaints', getAllComplaints);
 router.get('/analytics', getAnalytics);
 router.get('/departments', getDepartments);
-router.post('/escalate/:id', authorize('admin'), escalateComplaint);
+
+// Protected routes
+router.post('/escalate/:id', protect, authorize('admin'), escalateComplaint);
 
 module.exports = router;

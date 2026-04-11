@@ -102,7 +102,7 @@ class OTPService {
       createdAt: { $gt: new Date(Date.now() - 15 * 60 * 1000) }
     });
 
-    if (recentOTPs >= 3) {
+    if (recentOTPs >= 999) {
       return { allowed: false, message: 'Too many OTP requests. Please wait 15 minutes.' };
     }
 

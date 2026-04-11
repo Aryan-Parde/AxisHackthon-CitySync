@@ -3,7 +3,7 @@ const router = express.Router();
 const { getMapComplaints, getHeatmapData, getClusterData } = require('../controllers/mapController');
 const { protect } = require('../middleware/auth');
 
-router.use(protect);
+// Map routes are public - anyone can view the city map
 
 router.get('/complaints', getMapComplaints);
 router.get('/heatmap', getHeatmapData);

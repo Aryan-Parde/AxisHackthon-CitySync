@@ -1,9 +1,9 @@
 const rateLimit = require('express-rate-limit');
 
-// OTP sending rate limiter - max 3 requests per 15 minutes per IP
+// OTP sending rate limiter - relaxed for demo/hackathon
 const otpSendLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 999,
   message: {
     success: false,
     message: 'Too many OTP requests. Please try again after 15 minutes.'
@@ -12,10 +12,10 @@ const otpSendLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// OTP verify rate limiter - max 5 attempts per 15 minutes
+// OTP verify rate limiter - relaxed for demo/hackathon
 const otpVerifyLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 999,
   message: {
     success: false,
     message: 'Too many verification attempts. Please try again later.'

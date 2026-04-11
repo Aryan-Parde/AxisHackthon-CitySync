@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { authAPI } from '@/lib/api';
-import { MapPin, Phone, ArrowRight, Loader2 } from 'lucide-react';
+import { MapPin, Phone, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -73,6 +74,15 @@ export default function LoginPage() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md relative z-10"
       >
+        {/* Back to Home */}
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span className="text-sm">Back to Home</span>
+        </Link>
+
         {/* Logo */}
         <div className="text-center mb-8 flex flex-col items-center">
           <img src="/logo-full.png" alt="CitySync Logo" className="h-[72px] w-auto object-contain mb-4" />

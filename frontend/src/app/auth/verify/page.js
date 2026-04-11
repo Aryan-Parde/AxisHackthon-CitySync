@@ -191,6 +191,13 @@ function VerifyOTPContent() {
               'Verify & Login'
             )}
           </button>
+
+          {/* Demo hint */}
+          <div className="mt-4 p-3 rounded-lg bg-[#2EC4B6]/10 border border-[#2EC4B6]/20">
+            <p className="text-xs text-[#2EC4B6] text-center font-medium">
+              💡 Demo: Check the backend console for the OTP, or use <span className="font-bold">123456</span> as master code
+            </p>
+          </div>
         </div>
       </motion.div>
     </div>

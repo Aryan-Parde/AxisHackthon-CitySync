@@ -91,8 +91,8 @@ exports.sendOTP = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: `OTP sent to ${mobile}`,
-      data: { mobile }
+      message: result.smsSent ? `OTP sent to ${mobile}` : `OTP generated for ${mobile} (check backend console)`,
+      data: { mobile, smsSent: result.smsSent }
     });
   } catch (error) {
     next(error);

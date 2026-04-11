@@ -313,6 +313,13 @@ exports.resolveComplaint = async (req, res, next) => {
   try {
     const { resolutionPhoto, actionTaken } = req.body;
 
+    if (!resolutionPhoto) {
+      return res.status(400).json({
+        success: false,
+        message: 'Resolution photo is required — upload proof of completed work'
+      });
+    }
+
     if (!actionTaken) {
       return res.status(400).json({
         success: false,

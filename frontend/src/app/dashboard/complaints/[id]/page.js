@@ -59,6 +59,10 @@ export default function ComplaintDetailPage({ params }) {
   };
 
   const handleResolve = async () => {
+    if (!resolutionPhoto) {
+      toast.error('Please upload a photo of the completed work');
+      return;
+    }
     if (!actionTaken.trim()) {
       toast.error('Please provide an action taken report');
       return;
@@ -663,7 +667,7 @@ export default function ComplaintDetailPage({ params }) {
 
                       <button
                         onClick={handleResolve}
-                        disabled={resolving || !actionTaken.trim()}
+                        disabled={resolving || !actionTaken.trim() || !resolutionPhoto}
                         className="ml-8 mt-3 w-[calc(100%-2rem)] py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold text-sm hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
                       >
                         {resolving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}

@@ -175,6 +175,59 @@ export default function CityOverviewPage() {
         ))}
       </div>
 
+      {/* Pending Approvals — complaints with resolution evidence awaiting nodal officer approval */}
+      {(() => {
+        const pendingApprovals = complaints.filter(
+          c => c.status === 'in_progress' && c.resolution?.actionTaken
+        );
+        if (pendingApprovals.length === 0) return null;
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass rounded-2xl p-5 border-2 border-amber-500/20"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                <Clock className="w-5 h-5 text-amber-400" />
+                Pending Approvals
+                <span className="ml-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-xs font-bold">
+                  {pendingApprovals.length}
+                </span>
+              </h2>
+              <p className="text-xs text-[var(--text-dim)]">Officers have submitted resolutions — your review is needed</p>
+            </div>
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+              {pendingApprovals.map(c => (
+                <button
+                  key={c._id}
+                  onClick={() => router.push(`/dashboard/complaints/${c._id}`)}
+                  className="w-full flex items-center gap-4 p-3 rounded-xl bg-[var(--bg-card-hover)] hover:bg-amber-500/10 border border-transparent hover:border-amber-500/20 transition-all text-left group"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400 font-bold text-sm flex-shrink-0">
+                    ⏳
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-[var(--text-primary)] truncate">{c.title}</p>
+                    <p className="text-xs text-[var(--text-muted)] truncate">{c.ticketId} · {c.resolution?.actionTaken?.slice(0, 60)}...</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {c.resolution?.aiVerification?.score > 0 && (
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                        c.resolution.aiVerification.score >= 70 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'
+                      }`}>
+                        AI: {c.resolution.aiVerification.score}%
+                      </span>
+                    )}
+                    <span className="text-xs text-[var(--text-dim)] group-hover:text-amber-400 transition-colors">Review →</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        );
+      })()}
+
       {/* Map + Side Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Map */}

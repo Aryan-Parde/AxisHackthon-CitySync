@@ -19,14 +19,13 @@ const citizenNav = [
 
 const officerNav = [
   { href: '/dashboard/work-queue', icon: ClipboardList, label: 'Work Queue' },
-  { href: '/dashboard/complaints', icon: List, label: 'All Complaints' },
+  { href: '/dashboard/complaints', icon: List, label: 'All Tickets' },
   { href: '/dashboard/map', icon: Map, label: 'City Map' },
 ];
 
 const nodalNav = [
   { href: '/dashboard/overview', icon: Eye, label: 'City Overview' },
-  { href: '/dashboard/all-complaints', icon: List, label: 'All Complaints' },
-  { href: '/admin', icon: Shield, label: 'Admin Dashboard' },
+  { href: '/dashboard/complaints', icon: List, label: 'Review Tickets' },
   { href: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
   { href: '/dashboard/map', icon: Map, label: 'City Map' },
 ];

@@ -43,7 +43,12 @@ export default function PublicMapPage() {
         adminAPI.getDashboard()
       ]);
 
-      setComplaints(complaintsRes.data.data || []);
+      const allComplaints = complaintsRes.data.data || [];
+      // Only show active complaints on the map (not resolved/closed/fake)
+      const activeComplaints = allComplaints.filter(c =>
+        !['resolved', 'closed', 'fake'].includes(c.status)
+      );
+      setComplaints(activeComplaints);
       const overview = statsRes.data.data?.overview || {};
       setStats({
         total: overview.total || 0,

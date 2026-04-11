@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { authAPI } from '@/lib/api';
 import { motion, useMotionValue, useTransform, useSpring, useInView, AnimatePresence } from 'framer-motion';
@@ -229,7 +230,7 @@ function AnimatedGrid() {
 
 /* ─── Main Component ─── */
 export default function LandingPage() {
-  const { isAuthenticated, user, loading: authLoading } = useAuth();
+  const { isAuthenticated, user, loading: authLoading, logout } = useAuth();
   const [loadingRole, setLoadingRole] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
   const [selectedCity, setSelectedCity] = useState('');
@@ -344,12 +345,23 @@ export default function LandingPage() {
               {authLoading ? (
                 <div className="w-24 h-9 rounded-lg shimmer" />
               ) : isAuthenticated ? (
-                <MagneticButton
-                  href={user?.role === 'admin' ? '/dashboard/overview' : user?.role === 'authority' ? '/dashboard/work-queue' : '/dashboard/map'}
-                  className="px-5 py-2 rounded-lg bg-gradient-to-r from-[#2EC4B6] to-[#90DBF4] text-white font-medium text-sm hover:opacity-90 transition-all duration-300 shadow-md shadow-[#2EC4B6]/20 hover:shadow-lg hover:shadow-[#2EC4B6]/30"
-                >
-                  My Dashboard
-                </MagneticButton>
+                <>
+                  <button
+                    onClick={() => {
+                      logout();
+                      window.location.href = '/';
+                    }}
+                    className="text-[var(--text-muted)] hover:text-red-500 transition-colors text-sm font-medium"
+                  >
+                    Sign Out
+                  </button>
+                  <MagneticButton
+                    href={user?.role === 'admin' ? '/dashboard/overview' : user?.role === 'authority' ? '/dashboard/work-queue' : '/dashboard/map'}
+                    className="px-5 py-2 rounded-lg bg-gradient-to-r from-[#2EC4B6] to-[#90DBF4] text-white font-medium text-sm hover:opacity-90 transition-all duration-300 shadow-md shadow-[#2EC4B6]/20 hover:shadow-lg hover:shadow-[#2EC4B6]/30"
+                  >
+                    My Dashboard
+                  </MagneticButton>
+                </>
               ) : (
                 <>
                   <Link href="/auth/login" className="text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors text-sm font-medium">

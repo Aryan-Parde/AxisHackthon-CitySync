@@ -97,15 +97,7 @@ class OTPService {
 
   // Check rate limit for OTP requests (per mobile number)
   static async canSendOTP(mobile) {
-    const recentOTPs = await OTP.countDocuments({
-      mobile,
-      createdAt: { $gt: new Date(Date.now() - 15 * 60 * 1000) }
-    });
-
-    if (recentOTPs >= 999) {
-      return { allowed: false, message: 'Too many OTP requests. Please wait 15 minutes.' };
-    }
-
+    // 15-minute limit removed as requested
     return { allowed: true };
   }
 }

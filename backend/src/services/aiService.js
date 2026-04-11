@@ -11,101 +11,331 @@ try {
   console.warn('⚠️ Gemini AI not configured. Using fallback classification.');
 }
 
+// Issue type to department mapping (strict — NO "Other" catch-all)
+const ISSUE_DEPARTMENT_MAP = {
+  'Garbage': 'Solid Waste Management',
+  'Water Leakage': 'Public Health Engineering Department',
+  'Road Damage': 'Public Work Department',
+  'Electricity Issue': 'Electrical Department',
+  'Encroachment': 'Encroachment Department',
+  'Environment Issue': 'Environment Department',
+  'Fire Hazard': 'Fire Department',
+  'Health Issue': 'Health Department (Medicine)',
+  'Tax Issue': 'Revenue Department',
+  'Transport Issue': 'Transport Department'
+};
+
+// Map new issue types to legacy category codes for backward compat
+const ISSUE_TO_CATEGORY = {
+  'Garbage': 'garbage',
+  'Water Leakage': 'water_supply',
+  'Road Damage': 'road_damage',
+  'Electricity Issue': 'streetlight',
+  'Encroachment': 'illegal_construction',
+  'Environment Issue': 'noise',
+  'Fire Hazard': 'other',
+  'Health Issue': 'other',
+  'Tax Issue': 'other',
+  'Transport Issue': 'traffic'
+};
+
+// Keyword normalization map (synonyms → canonical form)
+const KEYWORD_NORMALIZE = {
+  trash: 'garbage', waste: 'garbage', litter: 'garbage', dump: 'garbage', rubbish: 'garbage', debris: 'garbage', dustbin: 'garbage',
+  leak: 'water', overflow: 'water', 'pipe burst': 'water', drainage: 'water', sewage: 'water', sewer: 'water', manhole: 'water', gutter: 'water',
+  crack: 'pothole', 'broken road': 'pothole', 'damaged street': 'pothole', pit: 'pothole', crater: 'pothole', footpath: 'pothole', pavement: 'pothole',
+  wire: 'electricity', cable: 'electricity', pole: 'electricity', streetlight: 'electricity', transformer: 'electricity', bulb: 'electricity',
+  'illegal structure': 'encroachment', blockage: 'encroachment', obstruction: 'encroachment', hawker: 'encroachment', unauthorized: 'encroachment',
+  pollution: 'pollution', smoke: 'pollution', 'dirty air': 'pollution', noise: 'pollution', honking: 'pollution',
+  flames: 'fire', burning: 'fire', blaze: 'fire', inflammable: 'fire',
+  medical: 'health', illness: 'health', sick: 'health', disease: 'health', mosquito: 'health', dengue: 'health', malaria: 'health',
+  'property tax': 'tax', bill: 'tax', assessment: 'tax', revenue: 'tax',
+  traffic: 'traffic', congestion: 'traffic', vehicles: 'traffic', parking: 'traffic', signal: 'traffic', jam: 'traffic', bus: 'traffic'
+};
+
 class AIService {
-  // Classify complaint using Gemini
+
+  // ─── Enhanced system prompt v2 with normalization, refinement, self-validation ───
+  static get CLASSIFICATION_PROMPT() {
+    return `You are an AI system that analyzes civic issue images and routes them to the correct municipal department with high accuracy.
+
+Your task:
+1. Identify the issue in the image or text
+2. Extract keywords
+3. Normalize keywords to standard forms
+4. Refine and validate the interpretation
+5. Classify the issue
+6. Map to the correct department
+
+---
+
+## Step 1: Extract and Normalize Keywords (MANDATORY)
+
+Extract 3–6 keywords and convert them into STANDARD (canonical) keywords:
+
+Garbage:
+trash, waste, litter, dump → garbage
+
+Water Leakage:
+leak, overflow, pipe burst, drainage → water
+
+Road Damage:
+crack, broken road, damaged street → pothole
+
+Electricity Issue:
+wire, cable, pole, streetlight, transformer → electricity
+
+Encroachment:
+illegal structure, blockage, obstruction → encroachment
+
+Environment Issue:
+pollution, smoke, dirty air → pollution
+
+Fire Hazard:
+flames, burning → fire
+
+Health Issue:
+medical, illness, sick → health
+
+Transport Issue:
+traffic, congestion, vehicles → traffic
+
+Tax Issue:
+property tax, bill → tax
+
+IMPORTANT:
+- ONLY output normalized keywords (e.g., "garbage", not "trash")
+
+---
+
+## Step 2: Context Refinement (VERY IMPORTANT)
+
+Before classification:
+- Re-evaluate the image using extracted keywords
+- Check if multiple issues are present
+- Identify the PRIMARY issue only
+- Ignore weak or unrelated signals
+- If keywords conflict, prioritize the most visible/severe issue
+
+---
+
+## Step 3: Issue Type Classification (STRICT)
+
+Choose ONLY one:
+- Garbage
+- Water Leakage
+- Road Damage
+- Electricity Issue
+- Encroachment
+- Environment Issue
+- Fire Hazard
+- Health Issue
+- Tax Issue
+- Transport Issue
+- Other
+
+---
+
+## Step 4: Department Mapping (STRICT)
+
+Garbage → Solid Waste Management
+Water Leakage → Public Health Engineering Department
+Road Damage → Public Work Department
+Electricity Issue → Electrical Department
+Encroachment → Encroachment Department
+Environment Issue → Environment Department
+Fire Hazard → Fire Department
+Health Issue → Health Department (Medicine)
+Tax Issue → Revenue Department
+Transport Issue → Transport Department
+Other → NONE (set department to "Unclassified")
+
+---
+
+## Step 5: Self-Validation (CRITICAL)
+
+Before final output:
+- Ensure keywords align with issue_type
+- Ensure issue_type correctly maps to department
+- If mismatch detected → correct it
+- If uncertainty remains → set issue_type = "Other"
+
+---
+
+## Step 6: Confidence Scoring
+
+- High clarity (clear visible issue) → 0.75–0.95
+- Moderate clarity → 0.6–0.75
+- Low clarity / ambiguity → below 0.6
+
+---
+
+## Step 7: Output (STRICT JSON ONLY)
+
+{
+  "keywords": ["k1", "k2", "k3"],
+  "issue_type": "IssueType",
+  "department": "DepartmentName",
+  "confidence": 0.0
+}
+
+---
+
+## Rules (MANDATORY)
+- DO NOT output anything except JSON
+- DO NOT include explanations
+- DO NOT use raw synonyms — only normalized keywords
+- DO NOT invent categories or departments
+- ALWAYS refine before deciding
+- If unsure → issue_type = "Other"
+- If issue_type is "Other" → department = "Unclassified"`;
+  }
+
+  // ─── Classify complaint from text (+ optional image) ───
   static async classifyComplaint(text, imageBase64 = null) {
     try {
       if (!model) {
         return this.fallbackClassification(text);
       }
 
-      const prompt = `You are a civic complaint classifier for an Indian smart city platform called CitySync.
+      // If an image is provided, use image-based classification
+      if (imageBase64) {
+        return this.classifyComplaintImage(text, imageBase64);
+      }
 
-Given the following citizen complaint, analyze it and return a JSON response.
+      const prompt = `${this.CLASSIFICATION_PROMPT}
 
-Categories (choose exactly one):
-- pothole: Road potholes, craters, broken roads
-- garbage: Waste, trash, littering, dumping
-- streetlight: Non-working street lights, broken lamps
-- water_supply: Water shortage, contamination, pipe burst
-- sewage: Blocked drains, sewage overflow, manhole issues
-- road_damage: Broken footpaths, damaged dividers, road cracks
-- noise: Noise pollution, loud construction
-- illegal_construction: Unauthorized buildings, encroachment
-- traffic: Signal issues, parking violations, road blockage
-- drainage: Waterlogging, flooding, blocked drainage
-- other: Anything else
-
-Return ONLY valid JSON (no markdown, no code blocks):
-{
-  "category": "one_of_the_above",
-  "confidence": 0.0 to 1.0,
-  "keywords": ["keyword1", "keyword2", "keyword3"],
-  "suggestedTitle": "A short descriptive title",
-  "severity": "critical|high|medium|low",
-  "summary": "One line summary"
-}
-
-Complaint: "${text}"`;
+Citizen complaint text: "${text}"`;
 
       const result = await model.generateContent(prompt);
       const response = result.response.text();
-      
-      // Parse JSON from response (handle potential markdown wrapping)
+
       let jsonStr = response;
       const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        jsonStr = jsonMatch[0];
-      }
+      if (jsonMatch) jsonStr = jsonMatch[0];
 
       const parsed = JSON.parse(jsonStr);
-      return {
-        success: true,
-        ...parsed
-      };
+      return this._buildResult(parsed, text);
     } catch (error) {
       console.error('AI Classification error:', error.message);
       return this.fallbackClassification(text);
     }
   }
 
-  // Fallback keyword-based classification
+  // ─── Classify complaint from image using Gemini vision ───
+  static async classifyComplaintImage(text, imageBase64) {
+    try {
+      if (!model) {
+        return this.fallbackClassification(text);
+      }
+
+      const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+
+      const parts = [
+        { text: `${this.CLASSIFICATION_PROMPT}\n\nCitizen complaint text: "${text || 'See attached image'}"` },
+        {
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: cleanBase64
+          }
+        }
+      ];
+
+      const result = await model.generateContent(parts);
+      const response = result.response.text();
+
+      let jsonStr = response;
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) jsonStr = jsonMatch[0];
+
+      const parsed = JSON.parse(jsonStr);
+      return this._buildResult(parsed, text || 'Image-based classification');
+    } catch (error) {
+      console.error('AI Image Classification error:', error.message);
+      return this.fallbackClassification(text || 'image complaint');
+    }
+  }
+
+  // ─── Build a standardized result, flagging unclassifiable complaints ───
+  static _buildResult(parsed, text) {
+    const issueType = parsed.issue_type;
+    const isUnclassified = issueType === 'Other' || !ISSUE_DEPARTMENT_MAP[issueType];
+    const department = isUnclassified ? null : ISSUE_DEPARTMENT_MAP[issueType];
+    const category = isUnclassified ? 'other' : (ISSUE_TO_CATEGORY[issueType] || 'other');
+    const confidence = parsed.confidence || 0;
+
+    // Normalize keywords using the canonical map
+    const normalizedKeywords = (parsed.keywords || []).map(kw => {
+      const lower = kw.toLowerCase();
+      return KEYWORD_NORMALIZE[lower] || lower;
+    });
+    // Deduplicate
+    const uniqueKeywords = [...new Set(normalizedKeywords)];
+
+    return {
+      success: true,
+      needsMoreInfo: isUnclassified,
+      category,
+      issue_type: issueType,
+      department,
+      confidence,
+      keywords: uniqueKeywords.slice(0, 6),
+      suggestedTitle: isUnclassified ? null : `${issueType} reported`,
+      severity: confidence >= 0.8 ? 'high' : confidence >= 0.6 ? 'medium' : 'low',
+      summary: text ? text.substring(0, 100) : ''
+    };
+  }
+
+  // ─── Fallback keyword-based classification (uses new issue types) ───
   static fallbackClassification(text) {
-    const lower = text.toLowerCase();
-    const categoryKeywords = {
-      pothole: ['pothole', 'pit', 'hole', 'crater', 'bump', 'road broken'],
-      garbage: ['garbage', 'trash', 'waste', 'dump', 'litter', 'dustbin', 'rubbish', 'debris'],
-      streetlight: ['streetlight', 'street light', 'lamp', 'bulb', 'dark road', 'no light'],
-      water_supply: ['water', 'tap', 'pipeline', 'water supply', 'drinking water', 'pipe burst', 'leakage'],
-      sewage: ['sewage', 'sewer', 'manhole', 'drain smell', 'gutter', 'nala', 'sewerage'],
-      road_damage: ['road damage', 'footpath', 'divider', 'broken road', 'crack', 'pavement'],
-      noise: ['noise', 'loud', 'construction noise', 'honking', 'music'],
-      illegal_construction: ['illegal', 'unauthorized', 'encroachment', 'building violation'],
-      traffic: ['traffic', 'signal', 'parking', 'jam', 'blockage', 'zebra crossing'],
-      drainage: ['waterlog', 'flood', 'drainage', 'water stagnant', 'rain water']
+    const lower = (text || '').toLowerCase();
+    const issueKeywords = {
+      'Garbage': ['garbage', 'trash', 'waste', 'dump', 'litter', 'dustbin', 'rubbish', 'debris'],
+      'Water Leakage': ['water', 'tap', 'pipeline', 'water supply', 'drinking water', 'pipe burst', 'leakage', 'sewage', 'sewer', 'manhole', 'drain', 'gutter', 'sewerage'],
+      'Road Damage': ['pothole', 'pit', 'hole', 'crater', 'road damage', 'footpath', 'divider', 'broken road', 'crack', 'pavement', 'road broken'],
+      'Electricity Issue': ['streetlight', 'street light', 'lamp', 'bulb', 'dark road', 'no light', 'electric', 'power', 'wire', 'transformer'],
+      'Encroachment': ['illegal', 'unauthorized', 'encroachment', 'building violation', 'hawker'],
+      'Environment Issue': ['noise', 'loud', 'pollution', 'honking', 'tree', 'deforestation', 'smoke', 'air quality'],
+      'Fire Hazard': ['fire', 'blaze', 'burn', 'inflammable', 'smoke', 'hazard'],
+      'Health Issue': ['disease', 'epidemic', 'mosquito', 'dengue', 'malaria', 'hospital', 'medical'],
+      'Tax Issue': ['tax', 'revenue', 'property tax', 'bill', 'assessment'],
+      'Transport Issue': ['traffic', 'signal', 'parking', 'jam', 'blockage', 'bus', 'transport', 'zebra crossing', 'road blockage']
     };
 
-    let bestCategory = 'other';
+    let bestIssue = null;
     let maxMatches = 0;
     const foundKeywords = [];
 
-    for (const [category, keywords] of Object.entries(categoryKeywords)) {
+    for (const [issueType, keywords] of Object.entries(issueKeywords)) {
       const matches = keywords.filter(kw => lower.includes(kw));
       if (matches.length > maxMatches) {
         maxMatches = matches.length;
-        bestCategory = category;
+        bestIssue = issueType;
+        foundKeywords.length = 0;
         foundKeywords.push(...matches);
       }
     }
 
+    const isUnclassified = !bestIssue || maxMatches === 0;
+    const department = isUnclassified ? null : ISSUE_DEPARTMENT_MAP[bestIssue];
+    const category = isUnclassified ? 'other' : (ISSUE_TO_CATEGORY[bestIssue] || 'other');
+    const confidence = maxMatches > 0 ? Math.min(0.5 + maxMatches * 0.15, 0.9) : 0.2;
+
+    // Normalize found keywords
+    const normalizedKeywords = foundKeywords.map(kw => KEYWORD_NORMALIZE[kw] || kw);
+    const uniqueKeywords = [...new Set(normalizedKeywords)];
+
     return {
       success: true,
-      category: bestCategory,
-      confidence: maxMatches > 0 ? Math.min(0.5 + maxMatches * 0.15, 0.9) : 0.3,
-      keywords: foundKeywords.slice(0, 5),
-      suggestedTitle: `${bestCategory.replace('_', ' ')} issue reported`,
-      severity: 'medium',
-      summary: text.substring(0, 100)
+      needsMoreInfo: isUnclassified,
+      category,
+      issue_type: bestIssue || 'Other',
+      department,
+      confidence,
+      keywords: uniqueKeywords.slice(0, 6),
+      suggestedTitle: isUnclassified ? null : `${bestIssue} reported`,
+      severity: confidence >= 0.7 ? 'high' : confidence >= 0.5 ? 'medium' : 'low',
+      summary: text ? text.substring(0, 100) : ''
     };
   }
 

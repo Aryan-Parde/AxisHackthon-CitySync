@@ -24,6 +24,19 @@ exports.createComplaint = async (req, res, next) => {
     // Step 1: AI Classification
     const aiResult = await AIService.classifyComplaint(description);
 
+    // If AI can't classify → prompt user for more detail
+    if (aiResult.needsMoreInfo) {
+      return res.status(422).json({
+        success: false,
+        needsMoreInfo: true,
+        message: 'We could not identify the civic issue from your description. Please provide more details or attach a clearer photo so we can route your complaint to the right department.',
+        aiResult: {
+          keywords: aiResult.keywords,
+          confidence: aiResult.confidence
+        }
+      });
+    }
+
     // Step 2: Generate embedding for duplicate detection
     const embedding = await AIService.generateEmbedding(description);
 

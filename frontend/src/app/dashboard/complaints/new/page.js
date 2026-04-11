@@ -20,6 +20,7 @@ export default function NewComplaintPage() {
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [aiResult, setAiResult] = useState(null);
+  const [needsMoreInfo, setNeedsMoreInfo] = useState(false);
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
@@ -102,6 +103,7 @@ export default function NewComplaintPage() {
     }
 
     setLoading(true);
+    setNeedsMoreInfo(false);
     try {
       const res = await complaintsAPI.create({
         description: description.trim(),
@@ -132,7 +134,13 @@ export default function NewComplaintPage() {
         router.push(`/dashboard/complaints/${data.data._id}`);
       }, 2000);
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to submit complaint');
+      const errData = error.response?.data;
+      if (errData?.needsMoreInfo) {
+        setNeedsMoreInfo(true);
+        toast.error('Could not identify the issue. Please add more details.', { duration: 5000 });
+      } else {
+        toast.error(errData?.message || 'Failed to submit complaint');
+      }
     } finally {
       setLoading(false);
     }
@@ -150,6 +158,30 @@ export default function NewComplaintPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Needs More Info Warning */}
+          {needsMoreInfo && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-2xl p-4 bg-amber-500/10 border border-amber-500/30"
+            >
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">⚠️</span>
+                <div>
+                  <h3 className="font-semibold text-amber-400 text-sm mb-1">Could not identify the issue</h3>
+                  <p className="text-xs text-amber-300/80 leading-relaxed">
+                    Our AI couldn&apos;t classify your complaint to a specific department. Please try:
+                  </p>
+                  <ul className="text-xs text-amber-300/70 mt-1.5 space-y-0.5 list-disc list-inside">
+                    <li>Be more specific about the problem (e.g. &quot;broken water pipe&quot; instead of &quot;issue&quot;)</li>
+                    <li>Mention what you see (garbage, pothole, leakage, broken streetlight, etc.)</li>
+                    <li>Attach a clear photo of the issue</li>
+                  </ul>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* Description */}
           <div className="glass rounded-2xl p-5">
             <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
@@ -157,9 +189,9 @@ export default function NewComplaintPage() {
             </label>
             <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => { setDescription(e.target.value); if (needsMoreInfo) setNeedsMoreInfo(false); }}
               placeholder="Describe the civic issue in detail. Be specific about the problem, its impact, and urgency..."
-              className="w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-dim)] focus:border-[#2EC4B6] focus:ring-1 focus:ring-[#2EC4B6]/50 outline-none transition-all resize-none min-h-[120px]"
+              className={`w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border ${needsMoreInfo ? 'border-amber-500/50 ring-1 ring-amber-500/30' : 'border-[var(--border)]'} text-[var(--text-primary)] placeholder-[var(--text-dim)] focus:border-[#2EC4B6] focus:ring-1 focus:ring-[#2EC4B6]/50 outline-none transition-all resize-none min-h-[120px]`}
               maxLength={2000}
             />
             <div className="flex justify-between mt-2">

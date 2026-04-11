@@ -151,6 +151,51 @@ body {
   animation: slideUp 0.5s ease-out forwards;
 }
 
+/* ── Landing Page Motion Effects ── */
+
+/* Glow pulse for interactive elements */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(46, 196, 182, 0.15); }
+  50% { box-shadow: 0 0 40px rgba(46, 196, 182, 0.3), 0 0 60px rgba(144, 219, 244, 0.15); }
+}
+.animate-glow-pulse {
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+/* Gradient text shimmer */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradientShift 4s ease infinite;
+}
+
+/* Sweep shine effect */
+@keyframes sweepShine {
+  0% { transform: translateX(-100%) skewX(-15deg); }
+  100% { transform: translateX(200%) skewX(-15deg); }
+}
+.sweep-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transform: translateX(-100%) skewX(-15deg);
+  animation: sweepShine 3s ease-in-out infinite;
+}
+
+/* No scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* Map container styles */
 .mapboxgl-map {
   border-radius: 12px;

@@ -78,8 +78,12 @@ export default function LandingPage() {
       localStorage.setItem('citysync_token', token);
       localStorage.setItem('citysync_user', JSON.stringify(user));
       
-      toast.success(`Logged in as ${user.role}!`);
-      window.location.href = '/dashboard';
+      const roleNames = { admin: 'Nodal Officer', authority: 'Dept. Officer', citizen: 'Citizen' };
+      toast.success(`Logged in as ${roleNames[user.role] || user.role}!`);
+
+      // Role-based redirect
+      const redirects = { admin: '/dashboard/overview', authority: '/dashboard/work-queue' };
+      window.location.href = redirects[user.role] || '/dashboard/map';
     } catch (error) {
       toast.error('Quick login failed. Try the standard login page.');
     } finally {

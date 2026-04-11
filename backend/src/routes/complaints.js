@@ -6,7 +6,9 @@ const {
   getComplaint,
   getNearbyComplaints,
   updateStatus,
-  upvoteComplaint
+  upvoteComplaint,
+  resolveComplaint,
+  reassignComplaint
 } = require('../controllers/complaintController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -17,6 +19,8 @@ router.get('/', getMyComplaints);
 router.get('/nearby', getNearbyComplaints);
 router.get('/:id', getComplaint);
 router.put('/:id/status', authorize('admin', 'authority'), updateStatus);
+router.put('/:id/resolve', authorize('admin', 'authority'), resolveComplaint);
+router.put('/:id/reassign', authorize('admin'), reassignComplaint);
 router.post('/:id/upvote', upvoteComplaint);
 
 module.exports = router;

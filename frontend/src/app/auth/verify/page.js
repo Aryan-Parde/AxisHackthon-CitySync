@@ -84,7 +84,10 @@ function VerifyOTPContent() {
       const { token, user } = res.data.data;
       login(user, token);
       toast.success('Welcome to CitySync! 🏙️');
-      router.push('/dashboard');
+
+      // Role-based redirect
+      const redirects = { admin: '/dashboard/overview', authority: '/dashboard/work-queue' };
+      router.push(redirects[user.role] || '/dashboard/map');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Invalid OTP');
       setOtp(['', '', '', '', '', '']);

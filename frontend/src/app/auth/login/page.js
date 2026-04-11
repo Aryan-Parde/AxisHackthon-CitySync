@@ -31,6 +31,15 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  const getRoleRedirect = (role) => {
+    switch(role) {
+      case 'admin': return '/dashboard/overview';
+      case 'authority': return '/dashboard/work-queue';
+      default: return '/dashboard/map';
+    }
+  };
+
   const handleAutoLogin = async (demoMobile) => {
     setLoading(true);
     try {
@@ -41,8 +50,9 @@ export default function LoginPage() {
       localStorage.setItem('citysync_token', token);
       localStorage.setItem('citysync_user', JSON.stringify(user));
       
-      toast.success(`Logged in as ${user.role}!`);
-      window.location.href = '/dashboard';
+      const roleNames = { admin: 'Nodal Officer', authority: 'Dept. Officer', citizen: 'Citizen' };
+      toast.success(`Logged in as ${roleNames[user.role] || user.role}!`);
+      window.location.href = getRoleRedirect(user.role);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Auto login failed');
     } finally {

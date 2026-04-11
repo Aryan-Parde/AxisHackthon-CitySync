@@ -121,7 +121,18 @@ const complaintSchema = new mongoose.Schema({
   upvotedBy: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
-  }]
+  }],
+  resolution: {
+    photo: { type: String, default: '' },       // Base64 or URL of resolution photo
+    actionTaken: { type: String, default: '' },  // Officer's action report
+    resolvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    resolvedAt: { type: Date },
+    aiVerification: {
+      verified: { type: Boolean, default: false },
+      score: { type: Number, default: 0 },       // 0-100 confidence
+      analysis: { type: String, default: '' }     // AI explanation
+    }
+  }
 }, {
   timestamps: true
 });

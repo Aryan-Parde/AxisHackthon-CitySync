@@ -7,7 +7,7 @@ import { complaintsAPI } from '@/lib/api';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, MapPin, Clock, ThumbsUp, Users, AlertTriangle,
-  CheckCircle, Loader2, ChevronRight, AlertOctagon
+  CheckCircle, Loader2, ChevronRight, AlertOctagon, Camera, FileText, ShieldCheck
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -42,7 +42,40 @@ export default function ComplaintDetailPage({ params }) {
   const [updating, setUpdating] = useState(false);
   const [showStatusNote, setShowStatusNote] = useState(false);
   const [statusNote, setStatusNote] = useState('');
+  const [resolving, setResolving] = useState(false);
+  const [resolutionPhoto, setResolutionPhoto] = useState('');
+  const [actionTaken, setActionTaken] = useState('');
+  const [aiResult, setAiResult] = useState(null);
   const router = useRouter();
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => setResolutionPhoto(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleResolve = async () => {
+    if (!actionTaken.trim()) {
+      toast.error('Please provide an action taken report');
+      return;
+    }
+    setResolving(true);
+    try {
+      const res = await complaintsAPI.resolve(id, {
+        resolutionPhoto,
+        actionTaken
+      });
+      setComplaint(res.data.data);
+      setAiResult(res.data.aiVerification);
+      toast.success('Complaint resolved!');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to resolve');
+    } finally {
+      setResolving(false);
+    }
+  };
 
   useEffect(() => {
     fetchComplaint();
@@ -337,6 +370,106 @@ export default function ComplaintDetailPage({ params }) {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Officer Resolution Panel */}
+        {(user?.role === 'authority' || user?.role === 'admin') && complaint.status !== 'resolved' && complaint.status !== 'closed' && complaint.status !== 'fake' && (
+          <div className="glass rounded-2xl p-6 border-2 border-[#2EC4B6]/20">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-[#2EC4B6]" />
+              Resolve Complaint
+            </h2>
+
+            {/* Resolution Photo Upload */}
+            <div className="mb-4">
+              <label className="text-sm font-medium text-[var(--text-secondary)] block mb-2">
+                <Camera className="w-4 h-4 inline mr-1" /> Resolution Photo
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                className="w-full text-sm text-[var(--text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#2EC4B6]/10 file:text-[#2EC4B6] hover:file:bg-[#2EC4B6]/20 cursor-pointer"
+              />
+              {resolutionPhoto && (
+                <div className="mt-2 rounded-lg overflow-hidden border border-[var(--border)] max-w-xs">
+                  <img src={resolutionPhoto} alt="Resolution" className="w-full h-40 object-cover" />
+                </div>
+              )}
+            </div>
+
+            {/* Action Taken Report */}
+            <div className="mb-4">
+              <label className="text-sm font-medium text-[var(--text-secondary)] block mb-2">
+                <FileText className="w-4 h-4 inline mr-1" /> Action Taken Report
+              </label>
+              <textarea
+                value={actionTaken}
+                onChange={(e) => setActionTaken(e.target.value)}
+                placeholder="Describe the action taken to resolve this issue..."
+                className="w-full p-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] text-sm outline-none focus:border-[#2EC4B6] resize-none"
+                rows={3}
+              />
+            </div>
+
+            <button
+              onClick={handleResolve}
+              disabled={resolving || !actionTaken.trim()}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold text-sm hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
+            >
+              {resolving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+              {resolving ? 'Verifying with AI...' : 'Mark as Resolved'}
+            </button>
+          </div>
+        )}
+
+        {/* AI Verification Result */}
+        {(aiResult || complaint.resolution?.aiVerification?.score > 0) && (
+          <div className={`glass rounded-2xl p-6 border-2 ${
+            (aiResult?.score || complaint.resolution?.aiVerification?.score) >= 70
+              ? 'border-emerald-500/30 bg-emerald-500/5'
+              : 'border-amber-500/30 bg-amber-500/5'
+          }`}>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+              🤖 AI Verification Result
+            </h2>
+            <div className="flex items-center gap-4 mb-3">
+              <div className="text-center">
+                <p className="text-3xl font-bold text-[var(--text-primary)]">
+                  {aiResult?.score || complaint.resolution?.aiVerification?.score}%
+                </p>
+                <p className="text-xs text-[var(--text-muted)]">Confidence</p>
+              </div>
+              <div className="flex-1">
+                <div className="h-3 rounded-full bg-[var(--bg-card-hover)] overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-1000 ${
+                      (aiResult?.score || complaint.resolution?.aiVerification?.score) >= 70
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                        : 'bg-gradient-to-r from-amber-500 to-orange-500'
+                    }`}
+                    style={{ width: `${aiResult?.score || complaint.resolution?.aiVerification?.score}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+            <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+              {aiResult?.analysis || complaint.resolution?.aiVerification?.analysis}
+            </p>
+          </div>
+        )}
+
+        {/* Resolution Info (if already resolved) */}
+        {complaint.resolution?.actionTaken && (
+          <div className="glass rounded-2xl p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">Resolution Report</h2>
+            <p className="text-sm text-[var(--text-muted)] mb-3">{complaint.resolution.actionTaken}</p>
+            {complaint.resolution.photo && (
+              <div className="rounded-lg overflow-hidden border border-[var(--border)] max-w-sm">
+                <img src={complaint.resolution.photo} alt="Resolution" className="w-full h-48 object-cover" />
+              </div>
+            )}
           </div>
         )}
       </motion.div>

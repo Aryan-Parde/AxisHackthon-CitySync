@@ -215,6 +215,94 @@ Date: ${new Date().toLocaleDateString()}
 Place: ____________
     `.trim();
   }
+
+  // Compare complaint photo vs resolution photo using Gemini 2.0 Flash
+  static async comparePhotos(complaintPhotoBase64, resolutionPhotoBase64, description) {
+    try {
+      if (!model) {
+        return this.fallbackPhotoComparison();
+      }
+
+      const parts = [
+        {
+          text: `You are a civic complaint verification AI. An officer claims to have resolved a complaint. Compare the BEFORE (complaint) photo and AFTER (resolution) photo.
+
+Complaint description: "${description}"
+
+Analyze both photos and determine:
+1. Is the issue described in the complaint visible in the BEFORE photo?
+2. Does the AFTER photo show that the issue has been fixed/resolved?
+3. How confident are you that the resolution is genuine?
+
+Return ONLY valid JSON (no markdown, no code blocks):
+{
+  "verified": true or false,
+  "score": 0 to 100 (confidence that issue is resolved),
+  "analysis": "One paragraph summary of your comparison",
+  "beforeDescription": "What you see in the before photo",
+  "afterDescription": "What you see in the after photo"
+}`
+        }
+      ];
+
+      // Add complaint photo if available
+      if (complaintPhotoBase64) {
+        const cleanBase64 = complaintPhotoBase64.replace(/^data:image\/\w+;base64,/, '');
+        parts.push({
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: cleanBase64
+          }
+        });
+        parts.push({ text: 'BEFORE photo (complaint):' });
+      }
+
+      // Add resolution photo
+      if (resolutionPhotoBase64) {
+        const cleanBase64 = resolutionPhotoBase64.replace(/^data:image\/\w+;base64,/, '');
+        parts.push({
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: cleanBase64
+          }
+        });
+        parts.push({ text: 'AFTER photo (resolution):' });
+      }
+
+      const result = await model.generateContent(parts);
+      const response = result.response.text();
+
+      let jsonStr = response;
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[0];
+      }
+
+      const parsed = JSON.parse(jsonStr);
+      return {
+        success: true,
+        verified: parsed.verified || false,
+        score: Math.min(100, Math.max(0, parsed.score || 0)),
+        analysis: parsed.analysis || 'Unable to compare photos.',
+        beforeDescription: parsed.beforeDescription || '',
+        afterDescription: parsed.afterDescription || ''
+      };
+    } catch (error) {
+      console.error('Photo comparison error:', error.message);
+      return this.fallbackPhotoComparison();
+    }
+  }
+
+  static fallbackPhotoComparison() {
+    return {
+      success: true,
+      verified: true,
+      score: 70,
+      analysis: 'AI photo comparison unavailable. Resolution accepted based on officer report. Manual verification recommended.',
+      beforeDescription: 'Photo analysis unavailable',
+      afterDescription: 'Photo analysis unavailable'
+    };
+  }
 }
 
 module.exports = AIService;

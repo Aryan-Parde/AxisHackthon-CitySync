@@ -7,19 +7,27 @@ import { useEffect, useState } from 'react';
 import {
   MapPin, LayoutDashboard, PlusCircle, Map, List,
   BarChart3, LogOut, Menu, X, ChevronRight,
-  Shield, Bell
+  Shield, Bell, ClipboardList, Eye
 } from 'lucide-react';
 
 const citizenNav = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/dashboard/complaints/new', icon: PlusCircle, label: 'New Complaint' },
+  { href: '/dashboard/complaints/new', icon: PlusCircle, label: 'Report Issue' },
   { href: '/dashboard/complaints', icon: List, label: 'My Complaints' },
   { href: '/dashboard/map', icon: Map, label: 'City Map' },
 ];
 
-const adminNav = [
+const officerNav = [
+  { href: '/dashboard/work-queue', icon: ClipboardList, label: 'Work Queue' },
+  { href: '/dashboard/complaints', icon: List, label: 'All Complaints' },
+  { href: '/dashboard/map', icon: Map, label: 'City Map' },
+];
+
+const nodalNav = [
+  { href: '/dashboard/overview', icon: Eye, label: 'City Overview' },
   { href: '/admin', icon: Shield, label: 'Admin Dashboard' },
   { href: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
+  { href: '/dashboard/map', icon: Map, label: 'City Map' },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -49,7 +57,9 @@ export default function DashboardLayout({ children }) {
 
   if (!isAuthenticated) return null;
 
-  const navItems = [...citizenNav, ...adminNav];
+  // Role-based navigation
+  const roleLabel = user?.role === 'admin' ? 'Nodal Officer' : user?.role === 'authority' ? 'Dept. Officer' : 'Citizen';
+  const navItems = user?.role === 'admin' ? nodalNav : user?.role === 'authority' ? officerNav : citizenNav;
 
   return (
     <div className="min-h-screen flex bg-[var(--bg-darker)]">
@@ -79,10 +89,10 @@ export default function DashboardLayout({ children }) {
         {/* Navigation */}
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-wider px-3 mb-2">
-            Citizen
+            {roleLabel}
           </p>
-          {citizenNav.map((item) => {
-            const isActive = pathname === item.href;
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.href}
@@ -100,54 +110,6 @@ export default function DashboardLayout({ children }) {
               </Link>
             );
           })}
-
-          {user?.role === 'admin' && (
-            <>
-              <div className="my-3 border-t border-[var(--border)]" />
-              <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-wider px-3 mb-2">
-                Admin
-              </p>
-              {adminNav.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                      isActive
-                        ? 'bg-indigo-500/15 text-indigo-400'
-                        : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)] hover:text-white'
-                    }`}
-                  >
-                    <item.icon className="w-5 h-5" />
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </>
-          )}
-
-          {user?.role === 'authority' && (
-            <>
-              <div className="my-3 border-t border-[var(--border)]" />
-              <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-wider px-3 mb-2">
-                Authority Workspace
-              </p>
-              <Link
-                href="/authority"
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  pathname.startsWith('/authority')
-                    ? 'bg-[#2EC4B6]/12 text-[#2EC4B6] font-semibold'
-                    : 'text-[var(--text-muted)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                <Shield className={`w-5 h-5 ${pathname.startsWith('/authority') ? 'text-[#2EC4B6]' : ''}`} />
-                Department Dashboard
-              </Link>
-            </>
-          )}
         </nav>
 
         {/* User info */}

@@ -292,3 +292,123 @@ exports.upvoteComplaint = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Resolve complaint with photo + action report
+// @route   PUT /api/complaints/:id/resolve
+// @access  Private (authority/admin)
+exports.resolveComplaint = async (req, res, next) => {
+  try {
+    const { resolutionPhoto, actionTaken } = req.body;
+
+    if (!actionTaken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Action taken report is required'
+      });
+    }
+
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    // Run AI photo comparison if both photos are available
+    let aiVerification = { verified: true, score: 70, analysis: 'No photos to compare. Accepted on officer report.' };
+
+    if (resolutionPhoto && complaint.images && complaint.images.length > 0) {
+      aiVerification = await AIService.comparePhotos(
+        complaint.images[0],
+        resolutionPhoto,
+        complaint.description
+      );
+      console.log(`\n🤖 AI Verification for ${complaint.ticketId}: Score ${aiVerification.score}%\n`);
+    } else if (resolutionPhoto) {
+      aiVerification = { verified: true, score: 75, analysis: 'No original complaint photo. Resolution photo accepted.' };
+    }
+
+    // Update complaint
+    complaint.status = 'resolved';
+    complaint.resolvedAt = new Date();
+    complaint.resolution = {
+      photo: resolutionPhoto || '',
+      actionTaken,
+      resolvedBy: req.user._id,
+      resolvedAt: new Date(),
+      aiVerification: {
+        verified: aiVerification.verified,
+        score: aiVerification.score,
+        analysis: aiVerification.analysis
+      }
+    };
+
+    complaint.timeline.push({
+      status: 'resolved',
+      timestamp: new Date(),
+      note: `Resolved by ${req.user.name || 'Officer'}. AI Verification: ${aiVerification.score}% confidence. ${aiVerification.analysis}`,
+      updatedBy: req.user._id
+    });
+
+    await complaint.save();
+
+    // Notify citizen
+    const citizen = await User.findById(complaint.citizen);
+    if (citizen) {
+      await NotificationService.notifyStatusUpdate(complaint, citizen);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Complaint resolved successfully',
+      data: complaint,
+      aiVerification
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Reassign complaint to different department
+// @route   PUT /api/complaints/:id/reassign
+// @access  Private (admin/nodal officer)
+exports.reassignComplaint = async (req, res, next) => {
+  try {
+    const { departmentId, note } = req.body;
+
+    if (!departmentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Department ID is required'
+      });
+    }
+
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    const Department = require('../models/Department');
+    const newDept = await Department.findById(departmentId);
+    if (!newDept) {
+      return res.status(404).json({ success: false, message: 'Department not found' });
+    }
+
+    complaint.department = departmentId;
+    complaint.timeline.push({
+      status: complaint.status,
+      timestamp: new Date(),
+      note: note || `Reassigned to ${newDept.name} by Nodal Officer`,
+      updatedBy: req.user._id
+    });
+
+    await complaint.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Complaint reassigned to ${newDept.name}`,
+      data: complaint
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

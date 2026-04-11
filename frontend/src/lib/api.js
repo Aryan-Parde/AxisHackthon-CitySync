@@ -57,6 +57,8 @@ export const complaintsAPI = {
   getById: (id) => api.get(`/complaints/${id}`),
   getNearby: (params) => api.get('/complaints/nearby', { params }),
   updateStatus: (id, data) => api.put(`/complaints/${id}/status`, data),
+  resolve: (id, data) => api.put(`/complaints/${id}/resolve`, data),
+  reassign: (id, data) => api.put(`/complaints/${id}/reassign`, data),
   upvote: (id) => api.post(`/complaints/${id}/upvote`),
 };
 

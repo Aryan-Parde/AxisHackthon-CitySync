@@ -229,10 +229,32 @@ function AnimatedGrid() {
 
 /* ─── Main Component ─── */
 export default function LandingPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user, loading: authLoading } = useAuth();
   const [loadingRole, setLoadingRole] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+  const [selectedCity, setSelectedCity] = useState('');
+  const [citySearch, setCitySearch] = useState('');
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
   const heroRef = useRef(null);
+
+  const indianCities = [
+    'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Ahmedabad', 'Chennai', 'Kolkata', 'Pune',
+    'Jaipur', 'Surat', 'Lucknow', 'Kanpur', 'Nagpur', 'Indore', 'Thane', 'Bhopal',
+    'Visakhapatnam', 'Patna', 'Vadodara', 'Ghaziabad', 'Ludhiana', 'Agra', 'Nashik',
+    'Faridabad', 'Meerut', 'Rajkot', 'Varanasi', 'Srinagar', 'Aurangabad', 'Dhanbad',
+    'Amritsar', 'Navi Mumbai', 'Allahabad', 'Howrah', 'Ranchi', 'Gwalior', 'Jabalpur',
+    'Coimbatore', 'Vijayawada', 'Jodhpur', 'Madurai', 'Raipur', 'Kota', 'Chandigarh',
+    'Guwahati', 'Solapur', 'Hubli', 'Mysore', 'Tiruchirappalli', 'Bareilly', 'Aligarh',
+    'Tiruppur', 'Moradabad', 'Jalandhar', 'Bhubaneswar', 'Salem', 'Warangal', 'Guntur',
+    'Bhiwandi', 'Saharanpur', 'Gorakhpur', 'Bikaner', 'Amravati', 'Noida', 'Jamshedpur',
+    'Bhilai', 'Cuttack', 'Firozabad', 'Kochi', 'Nellore', 'Bhavnagar', 'Dehradun',
+    'Durgapur', 'Asansol', 'Kolhapur', 'Ajmer', 'Akola', 'Gulbarga', 'Jamnagar',
+    'Ujjain', 'Loni', 'Siliguri', 'Jhansi', 'Ulhasnagar', 'Sangli', 'Mangalore',
+  ];
+
+  const filteredCities = citySearch
+    ? indianCities.filter(c => c.toLowerCase().startsWith(citySearch.toLowerCase())).slice(0, 6)
+    : [];
 
   // Cursor-tracking gradient
   const handleGlobalMouse = useCallback((e) => {
@@ -319,12 +341,14 @@ export default function LandingPage() {
               />
             </Link>
             <div className="flex items-center gap-4">
-              {isAuthenticated ? (
+              {authLoading ? (
+                <div className="w-24 h-9 rounded-lg shimmer" />
+              ) : isAuthenticated ? (
                 <MagneticButton
-                  href="/dashboard"
+                  href={user?.role === 'admin' ? '/dashboard/overview' : user?.role === 'authority' ? '/dashboard/work-queue' : '/dashboard/map'}
                   className="px-5 py-2 rounded-lg bg-gradient-to-r from-[#2EC4B6] to-[#90DBF4] text-white font-medium text-sm hover:opacity-90 transition-all duration-300 shadow-md shadow-[#2EC4B6]/20 hover:shadow-lg hover:shadow-[#2EC4B6]/30"
                 >
-                  Dashboard
+                  My Dashboard
                 </MagneticButton>
               ) : (
                 <>
@@ -468,6 +492,56 @@ export default function LandingPage() {
             Report civic issues, track resolution in real-time, and help build a smarter city.
             AI-powered routing ensures your voice reaches the right authority.
           </motion.p>
+
+          {/* City Selector */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.9, ease: [0.22, 1, 0.36, 1] }}
+            className="mb-8 max-w-md mx-auto relative"
+          >
+            <p className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-wider mb-3">Select Your City</p>
+            <div className="relative">
+              <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-white/90 border border-[var(--border)] shadow-sm focus-within:border-[#2EC4B6] focus-within:shadow-md focus-within:shadow-[#2EC4B6]/10 transition-all">
+                <MapPin className="w-4 h-4 text-[#2EC4B6] flex-shrink-0" />
+                <input
+                  type="text"
+                  value={selectedCity || citySearch}
+                  onChange={(e) => {
+                    setCitySearch(e.target.value);
+                    setSelectedCity('');
+                    setShowCitySuggestions(true);
+                  }}
+                  onFocus={() => setShowCitySuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowCitySuggestions(false), 200)}
+                  placeholder="Type your city name..."
+                  className="flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-dim)]"
+                />
+                {selectedCity && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-[#2EC4B6]/10 text-[#2EC4B6] font-medium">✓</span>
+                )}
+              </div>
+              {showCitySuggestions && filteredCities.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-[var(--border)] shadow-lg overflow-hidden z-20">
+                  {filteredCities.map((city) => (
+                    <button
+                      key={city}
+                      onMouseDown={() => {
+                        setSelectedCity(city);
+                        setCitySearch('');
+                        setShowCitySuggestions(false);
+                        localStorage.setItem('citysync_city', city);
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left hover:bg-[#2EC4B6]/5 text-[var(--text-primary)] transition-colors"
+                    >
+                      <MapPin className="w-3.5 h-3.5 text-[var(--text-dim)]" />
+                      {city}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
 
           {/* CTA Buttons with magnetic effect */}
           <motion.div

@@ -118,13 +118,15 @@ export default function DashboardPage() {
             Here&apos;s what&apos;s happening in your city today
           </p>
         </div>
-        <Link
-          href="/dashboard/complaints/new"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#2EC4B6] to-[#90DBF4] text-white font-medium text-sm hover:opacity-90 transition-opacity"
-        >
-          <PlusCircle className="w-4 h-4" />
-          New Complaint
-        </Link>
+        {user?.role === 'citizen' && (
+          <Link
+            href="/dashboard/complaints/new"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#2EC4B6] to-[#90DBF4] text-white font-medium text-sm hover:opacity-90 transition-opacity"
+          >
+            <PlusCircle className="w-4 h-4" />
+            New Complaint
+          </Link>
+        )}
       </div>
 
       {/* Stats Grid */}

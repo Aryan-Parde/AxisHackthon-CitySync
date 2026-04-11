@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { complaintsAPI } from '@/lib/api';
+import { complaintsAPI, adminAPI } from '@/lib/api';
 import { motion } from 'framer-motion';
-import {
-  Filter, Search, ChevronRight, Clock, MapPin
-} from 'lucide-react';
+import { Filter, Search, ChevronRight, Clock, MapPin } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 const priorityColors = {
   critical: 'bg-red-500/15 text-red-400',
@@ -31,6 +30,7 @@ const categoryIcons = {
 };
 
 export default function ComplaintsListPage() {
+  const { user } = useAuth();
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({ status: '', category: '' });
@@ -41,10 +41,14 @@ export default function ComplaintsListPage() {
 
   const fetchComplaints = async () => {
     try {
-      const params = {};
+      const params = { limit: 100, sortBy: 'createdAt', sortOrder: 'desc' };
       if (filter.status) params.status = filter.status;
       if (filter.category) params.category = filter.category;
-      const res = await complaintsAPI.getMyComplaints(params);
+
+      // Officers & admins see all complaints; citizens see only theirs
+      const res = (user?.role === 'authority' || user?.role === 'admin')
+        ? await adminAPI.getComplaints(params)
+        : await complaintsAPI.getMyComplaints(params);
       setComplaints(res.data.data);
     } catch (error) {
       console.error('Fetch error:', error);
@@ -56,7 +60,9 @@ export default function ComplaintsListPage() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">My Complaints</h1>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">
+          {user?.role === 'citizen' ? 'My Complaints' : 'All Complaints'}
+        </h1>
         <div className="flex gap-2">
           <select
             value={filter.status}
@@ -96,12 +102,14 @@ export default function ComplaintsListPage() {
       ) : complaints.length === 0 ? (
         <div className="text-center py-20 glass rounded-2xl">
           <p className="text-lg text-[var(--text-muted)]">No complaints found</p>
-          <Link
-            href="/dashboard/complaints/new"
-            className="text-[#2EC4B6] font-medium text-sm mt-2 inline-block hover:underline"
-          >
-            Submit your first complaint →
-          </Link>
+          {user?.role === 'citizen' && (
+            <Link
+              href="/dashboard/complaints/new"
+              className="text-[#2EC4B6] font-medium text-sm mt-2 inline-block hover:underline"
+            >
+              Submit your first complaint →
+            </Link>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

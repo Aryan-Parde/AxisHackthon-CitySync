@@ -128,29 +128,76 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Demo hint */}
-        <div className="mt-4 text-center">
-          <p className="text-xs text-[var(--text-dim)] mb-3">
-            💡 One-Click Auto Logins (Fast Testing):
+        {/* Role Selection - Scrollable List */}
+        <div className="mt-6">
+          <p className="text-xs font-bold text-[var(--text-dim)] uppercase tracking-widest mb-3 text-center">
+            Quick Login As
           </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            <button 
+          <div className="glass rounded-2xl p-3 max-h-64 overflow-y-auto space-y-1.5">
+            {/* Citizen */}
+            <button
               onClick={() => handleAutoLogin('9876500000')}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors"
+              disabled={loading}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-500/8 hover:bg-emerald-500/15 border border-emerald-500/10 transition-all text-left group"
             >
-              Citizen
+              <span className="text-xl">👤</span>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-emerald-400">Citizen</p>
+                <p className="text-xs text-[var(--text-dim)]">Report & track issues</p>
+              </div>
+              <ArrowRight className="w-4 h-4 text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
-            <button 
-              onClick={() => handleAutoLogin('8000000000')}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 transition-colors"
+
+            {/* Divider */}
+            <div className="flex items-center gap-2 py-1 px-2">
+              <div className="flex-1 h-px bg-[var(--border)]" />
+              <span className="text-[10px] text-[var(--text-dim)] uppercase tracking-wider">Department Officers</span>
+              <div className="flex-1 h-px bg-[var(--border)]" />
+            </div>
+
+            {/* Department Officers */}
+            {[
+              { label: 'Roads & Infrastructure', icon: '🛣️', mobile: '8000000000', color: 'indigo' },
+              { label: 'Water Supply', icon: '💧', mobile: '8000000001', color: 'blue' },
+              { label: 'Sanitation & Waste', icon: '🗑️', mobile: '8000000002', color: 'amber' },
+              { label: 'Street Lighting', icon: '💡', mobile: '8000000003', color: 'yellow' },
+              { label: 'Sewage & Drainage', icon: '🚰', mobile: '8000000004', color: 'cyan' },
+              { label: 'Traffic & Transport', icon: '🚦', mobile: '8000000005', color: 'red' },
+            ].map((dept) => (
+              <button
+                key={dept.mobile}
+                onClick={() => handleAutoLogin(dept.mobile)}
+                disabled={loading}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-${dept.color}-500/8 hover:bg-${dept.color}-500/15 border border-${dept.color}-500/10 transition-all text-left group`}
+              >
+                <span className="text-xl">{dept.icon}</span>
+                <div className="flex-1">
+                  <p className={`text-sm font-semibold text-${dept.color}-400`}>{dept.label}</p>
+                  <p className="text-xs text-[var(--text-dim)]">Dept. Officer</p>
+                </div>
+                <ArrowRight className={`w-4 h-4 text-${dept.color}-400 opacity-0 group-hover:opacity-100 transition-opacity`} />
+              </button>
+            ))}
+
+            {/* Divider */}
+            <div className="flex items-center gap-2 py-1 px-2">
+              <div className="flex-1 h-px bg-[var(--border)]" />
+              <span className="text-[10px] text-[var(--text-dim)] uppercase tracking-wider">Admin</span>
+              <div className="flex-1 h-px bg-[var(--border)]" />
+            </div>
+
+            {/* Nodal Officer */}
+            <button
+              onClick={() => handleAutoLogin('9999999999')}
+              disabled={loading}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-purple-500/8 hover:bg-purple-500/15 border border-purple-500/10 transition-all text-left group"
             >
-              Roads Authority
-            </button>
-            <button 
-              onClick={() => handleAutoLogin('8000000001')}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition-colors"
-            >
-              Water Authority
+              <span className="text-xl">🏛️</span>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-purple-400">Nodal Officer</p>
+                <p className="text-xs text-[var(--text-dim)]">City-wide oversight & reassign</p>
+              </div>
+              <ArrowRight className="w-4 h-4 text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
           </div>
         </div>

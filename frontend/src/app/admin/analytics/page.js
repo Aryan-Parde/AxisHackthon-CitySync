@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid } from 'recharts';
 
-const COLORS = ['#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+const COLORS = ['#2EC4B6', '#90DBF4', '#FFBF69', '#27ae78', '#e84855', '#4ecf96', '#f5a83a', '#60c6ed'];
 
 const categoryIcons = {
   pothole: '🕳️', garbage: '🗑️', streetlight: '💡', water_supply: '💧',
@@ -81,7 +81,7 @@ export default function AnalyticsPage() {
     if (!active || !payload) return null;
     return (
       <div className="glass rounded-lg p-3 text-sm">
-        <p className="text-white font-medium">{label}</p>
+        <p className="text-[var(--text-primary)] font-medium">{label}</p>
         {payload.map((p, i) => (
           <p key={i} style={{ color: p.color }} className="text-xs mt-1">
             {p.name}: {p.value}
@@ -100,7 +100,7 @@ export default function AnalyticsPage() {
             <Link href="/admin" className="text-[var(--text-muted)] hover:text-white">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <BarChart3 className="w-5 h-5 text-indigo-400" />
+            <BarChart3 className="w-5 h-5 text-[#2EC4B6]" />
             <h1 className="text-lg font-bold gradient-text">Analytics</h1>
           </div>
           <div className="flex items-center gap-2">
@@ -125,7 +125,7 @@ export default function AnalyticsPage() {
           animate={{ opacity: 1, y: 0 }}
           className="glass rounded-2xl p-5"
         >
-          <h2 className="text-lg font-semibold text-white mb-4">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
             <TrendingUp className="w-5 h-5 inline mr-2" />
             Complaint Trend
           </h2>
@@ -136,8 +136,8 @@ export default function AnalyticsPage() {
                 <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} />
                 <YAxis stroke="#94a3b8" fontSize={12} />
                 <Tooltip content={<CustomTooltip />} />
-                <Line type="monotone" dataKey="submitted" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} name="Submitted" />
-                <Line type="monotone" dataKey="resolved" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} name="Resolved" />
+                <Line type="monotone" dataKey="submitted" stroke="#FFBF69" strokeWidth={2} dot={{ r: 3 }} name="Submitted" />
+                <Line type="monotone" dataKey="resolved" stroke="#2EC4B6" strokeWidth={2} dot={{ r: 3 }} name="Resolved" />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -151,7 +151,7 @@ export default function AnalyticsPage() {
             transition={{ delay: 0.1 }}
             className="glass rounded-2xl p-5"
           >
-            <h2 className="text-lg font-semibold text-white mb-4">Category Distribution</h2>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Category Distribution</h2>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -189,7 +189,7 @@ export default function AnalyticsPage() {
             transition={{ delay: 0.2 }}
             className="glass rounded-2xl p-5"
           >
-            <h2 className="text-lg font-semibold text-white mb-4">Priority Distribution</h2>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Priority Distribution</h2>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={priorityData}>
@@ -199,8 +199,8 @@ export default function AnalyticsPage() {
                   <Tooltip content={<CustomTooltip />} />
                   <Bar dataKey="value" radius={[8, 8, 0, 0]} name="Count">
                     {priorityData.map((entry, i) => {
-                      const colors = { critical: '#ef4444', high: '#fb923c', medium: '#f59e0b', low: '#10b981' };
-                      return <Cell key={i} fill={colors[entry.name] || '#6366f1'} />;
+                      const colors = { critical: '#e84855', high: '#f5a83a', medium: '#FFBF69', low: '#27ae78' };
+                      return <Cell key={i} fill={colors[entry.name] || '#2EC4B6'} />;
                     })}
                   </Bar>
                 </BarChart>
@@ -217,8 +217,8 @@ export default function AnalyticsPage() {
             transition={{ delay: 0.3 }}
             className="glass rounded-2xl p-5"
           >
-            <h2 className="text-lg font-semibold text-white mb-4">
-              <MapPin className="w-5 h-5 inline mr-2 text-red-400" />
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">
+              <MapPin className="w-5 h-5 inline mr-2 text-[#e84855]" />
               Top Hotspots
             </h2>
             <div className="space-y-3">
@@ -226,10 +226,10 @@ export default function AnalyticsPage() {
                 <div key={i} className="flex items-center gap-4 p-3 rounded-xl bg-[var(--bg-card-hover)]">
                   <span className="text-2xl font-bold text-[var(--text-dim)] w-8">#{i + 1}</span>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-white">{spot._id || 'Unknown location'}</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{spot._id || 'Unknown location'}</p>
                     <p className="text-xs text-[var(--text-dim)]">{spot.zone} zone • {spot.categories?.join(', ')}</p>
                   </div>
-                  <span className="text-lg font-bold text-indigo-400">{spot.count}</span>
+                  <span className="text-lg font-bold text-[#FFBF69]">{spot.count}</span>
                 </div>
               ))}
             </div>
@@ -244,7 +244,7 @@ export default function AnalyticsPage() {
             transition={{ delay: 0.4 }}
             className="glass rounded-2xl p-5"
           >
-            <h2 className="text-lg font-semibold text-white mb-4">Department Rankings</h2>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Department Rankings</h2>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -259,7 +259,7 @@ export default function AnalyticsPage() {
                   <XAxis type="number" stroke="#94a3b8" fontSize={12} domain={[0, 100]} />
                   <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={11} width={80} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="score" fill="#6366f1" radius={[0, 8, 8, 0]} name="Performance Score" />
+                  <Bar dataKey="score" fill="#2EC4B6" radius={[0, 8, 8, 0]} name="Performance Score" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

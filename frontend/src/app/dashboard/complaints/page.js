@@ -16,12 +16,12 @@ const priorityColors = {
 };
 
 const statusColors = {
-  submitted: 'bg-amber-500/15 text-amber-400',
-  under_review: 'bg-cyan-500/15 text-cyan-400',
-  in_progress: 'bg-indigo-500/15 text-indigo-400',
-  resolved: 'bg-emerald-500/15 text-emerald-400',
-  escalated: 'bg-red-500/15 text-red-400',
-  closed: 'bg-gray-500/15 text-gray-400',
+  submitted: 'bg-amber-100 text-amber-600',
+  under_review: 'bg-sky-100 text-sky-600',
+  in_progress: 'bg-[#2EC4B6]/10 text-[#22a99d]',
+  resolved: 'bg-emerald-100 text-emerald-600',
+  escalated: 'bg-red-100 text-red-600',
+  closed: 'bg-gray-100 text-gray-500',
 };
 
 const categoryIcons = {
@@ -56,7 +56,7 @@ export default function ComplaintsListPage() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-white">My Complaints</h1>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">My Complaints</h1>
         <div className="flex gap-2">
           <select
             value={filter.status}
@@ -98,7 +98,7 @@ export default function ComplaintsListPage() {
           <p className="text-lg text-[var(--text-muted)]">No complaints found</p>
           <Link
             href="/dashboard/complaints/new"
-            className="text-indigo-400 text-sm mt-2 inline-block hover:underline"
+            className="text-[#2EC4B6] font-medium text-sm mt-2 inline-block hover:underline"
           >
             Submit your first complaint →
           </Link>
@@ -120,7 +120,7 @@ export default function ComplaintsListPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="font-medium text-white">{c.title}</p>
+                      <p className="font-medium text-[var(--text-primary)]">{c.title}</p>
                       <p className="text-xs text-[var(--text-dim)] mt-0.5">{c.ticketId}</p>
                     </div>
                     <ChevronRight className="w-5 h-5 text-[var(--text-dim)] shrink-0" />

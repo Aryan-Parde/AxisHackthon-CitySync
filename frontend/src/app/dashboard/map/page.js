@@ -9,7 +9,7 @@ import mapboxgl from 'mapbox-gl';
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
 const categoryColors = {
-  pothole: '#ef4444', garbage: '#f59e0b', streetlight: '#6366f1',
+  pothole: '#ef4444', garbage: '#f59e0b', streetlight: '#2EC4B6',
   water_supply: '#06b6d4', sewage: '#8b5cf6', road_damage: '#fb923c',
   noise: '#a3a3a3', illegal_construction: '#ec4899', traffic: '#14b8a6',
   drainage: '#3b82f6', other: '#64748b'
@@ -121,7 +121,7 @@ export default function MapPage() {
           paint: {
             'circle-color': [
               'step', ['get', 'point_count'],
-              '#6366f1', 10,
+              '#2EC4B6', 10,
               '#f59e0b', 30,
               '#ef4444'
             ],
@@ -159,7 +159,7 @@ export default function MapPage() {
               'high', '#fb923c',
               'medium', '#f59e0b',
               'low', '#10b981',
-              '#6366f1'
+              '#2EC4B6'
             ],
             'circle-radius': 8,
             'circle-stroke-width': 2,
@@ -176,14 +176,14 @@ export default function MapPage() {
             .setLngLat(coords)
             .setHTML(`
               <div style="min-width:200px">
-                <strong style="font-size:14px">${props.title}</strong>
+                <strong style="font-size:14px;color:var(--text-primary)">${props.title}</strong>
                 <p style="font-size:12px;color:#94a3b8;margin:4px 0">${props.ticketId} • ${props.category}</p>
                 <div style="display:flex;gap:8px;margin-top:8px">
-                  <span style="font-size:11px;padding:2px 8px;border-radius:12px;background:rgba(99,102,241,0.15);color:#818cf8">${props.status?.replace('_',' ')}</span>
+                  <span style="font-size:11px;padding:2px 8px;border-radius:12px;background:rgba(46,196,182,0.15);color:#22a99d">${props.status?.replace('_',' ')}</span>
                   <span style="font-size:11px;padding:2px 8px;border-radius:12px;background:rgba(239,68,68,0.15);color:#f87171">${props.priority}</span>
                 </div>
                 ${props.duplicateCount > 1 ? `<p style="font-size:11px;color:#94a3b8;margin-top:6px">👥 Reported by ${props.duplicateCount} users</p>` : ''}
-                <a href="/dashboard/complaints/${props.id}" style="display:block;margin-top:8px;font-size:12px;color:#818cf8;text-decoration:none">View Details →</a>
+                <a href="/dashboard/complaints/${props.id}" style="display:block;margin-top:8px;font-size:12px;color:#2EC4B6;text-decoration:none">View Details →</a>
               </div>
             `)
             .addTo(map);
@@ -214,13 +214,13 @@ export default function MapPage() {
     <div className="h-[calc(100vh-8rem)] flex flex-col gap-4">
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-bold text-white mr-auto">City Complaint Map</h1>
+        <h1 className="text-xl font-bold text-[var(--text-primary)] mr-auto">City Complaint Map</h1>
 
         <div className="flex rounded-lg overflow-hidden border border-[var(--border)]">
           <button
             onClick={() => setViewMode('markers')}
             className={`px-4 py-2 text-sm flex items-center gap-1.5 ${
-              viewMode === 'markers' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-[var(--bg-card)] text-[var(--text-muted)]'
+              viewMode === 'markers' ? 'bg-[#2EC4B6]/15 text-[#2EC4B6]' : 'bg-[var(--bg-card)] text-[var(--text-muted)]'
             }`}
           >
             <MapPin className="w-4 h-4" />
@@ -229,7 +229,7 @@ export default function MapPage() {
           <button
             onClick={() => setViewMode('heatmap')}
             className={`px-4 py-2 text-sm flex items-center gap-1.5 ${
-              viewMode === 'heatmap' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-[var(--bg-card)] text-[var(--text-muted)]'
+              viewMode === 'heatmap' ? 'bg-[#2EC4B6]/15 text-[#2EC4B6]' : 'bg-[var(--bg-card)] text-[var(--text-muted)]'
             }`}
           >
             <Flame className="w-4 h-4" />
@@ -271,7 +271,7 @@ export default function MapPage() {
         {loading && (
           <div className="absolute inset-0 bg-[var(--bg-card)]/80 flex items-center justify-center z-10">
             <div className="flex items-center gap-2 text-[var(--text-muted)]">
-              <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-[#2EC4B6] border-t-transparent rounded-full animate-spin" />
               Loading map data...
             </div>
           </div>

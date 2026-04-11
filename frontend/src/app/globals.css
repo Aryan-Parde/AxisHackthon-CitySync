@@ -2,36 +2,48 @@
 @import "mapbox-gl/dist/mapbox-gl.css";
 
 :root {
-  --primary: #6366f1;
-  --primary-dark: #4f46e5;
-  --primary-light: #818cf8;
-  --secondary: #06b6d4;
-  --secondary-dark: #0891b2;
-  --accent: #f59e0b;
-  --accent-light: #fbbf24;
-  --success: #10b981;
-  --success-light: #34d399;
-  --danger: #ef4444;
-  --danger-light: #f87171;
-  --warning: #f59e0b;
-  --bg-dark: #0f172a;
-  --bg-darker: #020617;
-  --bg-card: #1e293b;
-  --bg-card-hover: #334155;
-  --bg-input: #1e293b;
-  --border: #334155;
-  --border-light: #475569;
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
-  --glow-primary: 0 0 20px rgba(99, 102, 241, 0.3);
-  --glow-success: 0 0 20px rgba(16, 185, 129, 0.3);
-  --glow-danger: 0 0 20px rgba(239, 68, 68, 0.3);
+  /* ── Mint Fresh Palette ── */
+  --primary: #2EC4B6;
+  --primary-dark: #22a99d;
+  --primary-light: #5dd5ca;
+  --secondary: #90DBF4;
+  --secondary-dark: #60c6ed;
+  --accent: #FFBF69;
+  --accent-dark: #f5a83a;
+  --accent-light: #ffd49a;
+
+  /* Semantic */
+  --success: #27ae78;
+  --success-light: #4ecf96;
+  --danger: #e84855;
+  --danger-light: #f07078;
+  --warning: #FFBF69;
+
+  /* Backgrounds */
+  --bg-dark: #eaf9f5;
+  --bg-darker: #F6FFFB;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f0fdf9;
+  --bg-input: #f0fdf9;
+
+  /* Borders */
+  --border: #c8ede8;
+  --border-light: #a8ddd6;
+
+  /* Text */
+  --text-primary: #1F2937;
+  --text-secondary: #374151;
+  --text-muted: #6B7280;
+  --text-dim: #9CA3AF;
+
+  /* Glows */
+  --glow-primary: 0 0 20px rgba(46, 196, 182, 0.25);
+  --glow-success: 0 0 20px rgba(39, 174, 120, 0.25);
+  --glow-danger: 0 0 20px rgba(232, 72, 85, 0.25);
 }
 
 @theme inline {
-  --color-background: var(--bg-dark);
+  --color-background: var(--bg-darker);
   --color-foreground: var(--text-primary);
   --color-primary: var(--primary);
   --color-primary-dark: var(--primary-dark);
@@ -60,22 +72,23 @@ body {
   min-height: 100vh;
 }
 
-/* Glass morphism card */
+/* Glass morphism card – light version */
 .glass {
-  background: rgba(30, 41, 59, 0.7);
+  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(71, 85, 105, 0.4);
+  border: 1px solid rgba(46, 196, 182, 0.2);
+  box-shadow: 0 4px 24px rgba(46, 196, 182, 0.08);
 }
 
 .glass-light {
-  background: rgba(30, 41, 59, 0.4);
+  background: rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(71, 85, 105, 0.2);
+  border: 1px solid rgba(46, 196, 182, 0.12);
 }
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, var(--primary-light), var(--secondary));
+  background: linear-gradient(135deg, var(--primary), var(--secondary-dark));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -148,7 +161,7 @@ body {
   border: 1px solid var(--border) !important;
   border-radius: 12px !important;
   padding: 12px 16px !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: 0 8px 32px rgba(46, 196, 182, 0.15) !important;
 }
 .mapboxgl-popup-tip {
   border-top-color: var(--bg-card) !important;
@@ -194,15 +207,15 @@ body {
 }
 
 /* Status colors */
-.status-submitted { color: var(--accent); }
-.status-under_review { color: var(--secondary); }
-.status-in_progress { color: var(--primary-light); }
+.status-submitted { color: var(--accent-dark); }
+.status-under_review { color: var(--secondary-dark); }
+.status-in_progress { color: var(--primary); }
 .status-resolved { color: var(--success); }
 .status-closed { color: var(--text-dim); }
 .status-escalated { color: var(--danger); }
 
 /* Priority colors */
 .priority-critical { color: var(--danger); }
-.priority-high { color: #fb923c; }
-.priority-medium { color: var(--accent); }
+.priority-high { color: #f97316; }
+.priority-medium { color: var(--accent-dark); }
 .priority-low { color: var(--success); }

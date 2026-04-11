@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import {
   MapPin, LayoutDashboard, PlusCircle, Map, List,
-  BarChart3, Settings, LogOut, Menu, X, ChevronRight,
+  BarChart3, LogOut, Menu, X, ChevronRight,
   Shield, Bell
 } from 'lucide-react';
 
@@ -38,7 +38,7 @@ export default function DashboardLayout({ children }) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--bg-darker)]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center animate-pulse">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#2EC4B6] to-[#90DBF4] flex items-center justify-center animate-pulse">
             <MapPin className="w-6 h-6 text-white" />
           </div>
           <p className="text-[var(--text-muted)] text-sm">Loading...</p>
@@ -56,17 +56,17 @@ export default function DashboardLayout({ children }) {
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+          className="fixed inset-0 bg-[#1F2937]/40 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-64 bg-[var(--bg-dark)] border-r border-[var(--border)] flex flex-col transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      <aside className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-64 bg-white border-r border-[var(--border)] flex flex-col transition-transform duration-300 shadow-lg ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         {/* Logo */}
         <div className="p-4 flex items-center justify-between border-b border-[var(--border)]">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#2EC4B6] to-[#90DBF4] flex items-center justify-center">
               <MapPin className="w-5 h-5 text-white" />
             </div>
             <span className="text-lg font-bold gradient-text">CitySync</span>
@@ -90,13 +90,13 @@ export default function DashboardLayout({ children }) {
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   isActive
-                    ? 'bg-indigo-500/15 text-indigo-400'
-                    : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)] hover:text-white'
+                    ? 'bg-[#2EC4B6]/12 text-[#2EC4B6] font-semibold'
+                    : 'text-[var(--text-muted)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
                 }`}
               >
-                <item.icon className="w-5 h-5" />
+                <item.icon className={`w-5 h-5 ${isActive ? 'text-[#2EC4B6]' : ''}`} />
                 {item.label}
-                {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
+                {isActive && <ChevronRight className="w-4 h-4 ml-auto text-[#2EC4B6]" />}
               </Link>
             );
           })}
@@ -115,11 +115,11 @@ export default function DashboardLayout({ children }) {
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   isActive
-                    ? 'bg-indigo-500/15 text-indigo-400'
-                    : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)] hover:text-white'
+                    ? 'bg-[#2EC4B6]/12 text-[#2EC4B6] font-semibold'
+                    : 'text-[var(--text-muted)] hover:bg-[var(--bg-card-hover)] hover:text-[var(--text-primary)]'
                 }`}
               >
-                <item.icon className="w-5 h-5" />
+                <item.icon className={`w-5 h-5 ${isActive ? 'text-[#2EC4B6]' : ''}`} />
                 {item.label}
               </Link>
             );
@@ -127,18 +127,18 @@ export default function DashboardLayout({ children }) {
         </nav>
 
         {/* User info */}
-        <div className="p-3 border-t border-[var(--border)]">
+        <div className="p-3 border-t border-[var(--border)] bg-[var(--bg-darker)]">
           <div className="flex items-center gap-3 px-3 py-2.5">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-white text-sm font-bold">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#2EC4B6] to-[#90DBF4] flex items-center justify-center text-white text-sm font-bold">
               {user?.name?.[0]?.toUpperCase() || user?.mobile?.slice(-2)}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user?.name || 'Citizen'}</p>
+              <p className="text-sm font-medium text-[var(--text-primary)] truncate">{user?.name || 'Citizen'}</p>
               <p className="text-xs text-[var(--text-dim)] truncate">{user?.mobile}</p>
             </div>
             <button
               onClick={logout}
-              className="p-1.5 rounded-lg hover:bg-[var(--bg-card)] text-[var(--text-dim)] hover:text-red-400 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-red-50 text-[var(--text-dim)] hover:text-red-500 transition-colors"
               title="Logout"
             >
               <LogOut className="w-4 h-4" />
@@ -150,18 +150,18 @@ export default function DashboardLayout({ children }) {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Top bar */}
-        <header className="sticky top-0 z-30 h-14 glass flex items-center px-4 lg:px-6">
+        <header className="sticky top-0 z-30 h-14 bg-white/80 backdrop-blur-md border-b border-[var(--border)] flex items-center px-4 lg:px-6">
           <button
-            className="lg:hidden p-2 -ml-2 text-[var(--text-muted)] hover:text-white"
+            className="lg:hidden p-2 -ml-2 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex-1" />
           <div className="flex items-center gap-3">
-            <button className="p-2 rounded-lg hover:bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-white transition-colors relative">
+            <button className="p-2 rounded-lg hover:bg-[var(--bg-card-hover)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors relative">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-[#FFBF69] rounded-full" />
             </button>
           </div>
         </header>

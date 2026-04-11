@@ -144,7 +144,7 @@ export default function NewComplaintPage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="text-2xl font-bold text-white mb-1">Report an Issue</h1>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-1">Report an Issue</h1>
         <p className="text-sm text-[var(--text-muted)] mb-6">
           Describe the problem and pin the location. AI will classify and route it automatically.
         </p>
@@ -159,7 +159,7 @@ export default function NewComplaintPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the civic issue in detail. Be specific about the problem, its impact, and urgency..."
-              className="w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border)] text-white placeholder-[var(--text-dim)] focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 outline-none transition-all resize-none min-h-[120px]"
+              className="w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-dim)] focus:border-[#2EC4B6] focus:ring-1 focus:ring-[#2EC4B6]/50 outline-none transition-all resize-none min-h-[120px]"
               maxLength={2000}
             />
             <div className="flex justify-between mt-2">
@@ -181,7 +181,7 @@ export default function NewComplaintPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Large pothole near MG Road bus stop"
-              className="w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border)] text-white placeholder-[var(--text-dim)] focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 outline-none transition-all"
+              className="w-full px-4 py-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] placeholder-[var(--text-dim)] focus:border-[#2EC4B6] focus:ring-1 focus:ring-[#2EC4B6]/50 outline-none transition-all"
               maxLength={200}
             />
           </div>
@@ -206,7 +206,7 @@ export default function NewComplaintPage() {
                 </div>
               ))}
               {images.length < 3 && (
-                <label className="w-24 h-24 rounded-xl border-2 border-dashed border-[var(--border)] flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-indigo-500/50 transition-colors">
+                <label className="w-24 h-24 rounded-xl border-2 border-dashed border-[var(--border)] flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-[#2EC4B6]/50 transition-colors">
                   <ImagePlus className="w-5 h-5 text-[var(--text-dim)]" />
                   <span className="text-xs text-[var(--text-dim)]">Add</span>
                   <input
@@ -233,7 +233,7 @@ export default function NewComplaintPage() {
             />
             {address && (
               <div className="mt-3 flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
+                <MapPin className="w-4 h-4 text-[#2EC4B6] mt-0.5 shrink-0" />
                 <p className="text-sm text-[var(--text-secondary)]">{address}</p>
               </div>
             )}
@@ -256,7 +256,7 @@ export default function NewComplaintPage() {
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
                   <p className="text-xs text-[var(--text-dim)]">Category</p>
-                  <p className="text-sm font-medium text-white capitalize">{aiResult.category?.replace('_', ' ')}</p>
+                  <p className="text-sm font-medium text-[var(--text-primary)] capitalize">{aiResult.category?.replace('_', ' ')}</p>
                 </div>
                 <div>
                   <p className="text-xs text-[var(--text-dim)]">Priority</p>
@@ -266,7 +266,7 @@ export default function NewComplaintPage() {
                 </div>
                 <div>
                   <p className="text-xs text-[var(--text-dim)]">Ticket</p>
-                  <p className="text-sm font-medium text-indigo-400">{aiResult.ticketId}</p>
+                  <p className="text-sm font-medium text-[#22a99d]">{aiResult.ticketId}</p>
                 </div>
               </div>
             </motion.div>
@@ -276,7 +276,7 @@ export default function NewComplaintPage() {
           <button
             type="submit"
             disabled={loading || !description.trim() || !location}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-semibold text-base hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#2EC4B6] to-[#90DBF4] text-white font-semibold text-base hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <>

@@ -111,8 +111,8 @@ function VerifyOTPContent() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--bg-darker)] relative overflow-hidden px-4">
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-        <div className="absolute top-20 right-10 w-72 h-72 bg-indigo-500/8 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 left-10 w-72 h-72 bg-cyan-500/8 rounded-full blur-3xl" />
+        <div className="absolute top-20 right-10 w-72 h-72 bg-[#2EC4B6]/15 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 left-10 w-72 h-72 bg-[#90DBF4]/15 rounded-full blur-3xl" />
       </div>
 
       <motion.div
@@ -124,24 +124,22 @@ function VerifyOTPContent() {
         {/* Back button */}
         <button
           onClick={() => router.push('/auth/login')}
-          className="flex items-center gap-2 text-[var(--text-muted)] hover:text-white transition-colors mb-6"
+          className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm">Back</span>
         </button>
 
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/20">
-            <MapPin className="w-8 h-8 text-white" />
-          </div>
+        <div className="text-center mb-8 flex flex-col items-center">
+          <img src="/logo-icon.png" alt="CitySync Logo" className="h-[72px] w-auto object-contain mb-4" />
         </div>
 
         {/* Verify Card */}
         <div className="glass rounded-2xl p-8">
-          <h2 className="text-xl font-semibold text-white mb-1">Verify OTP</h2>
+          <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-1">Verify OTP</h2>
           <p className="text-sm text-[var(--text-muted)] mb-8">
-            Enter the 6-digit code sent to <span className="text-indigo-400 font-medium">{mobile}</span>
+            Enter the 6-digit code sent to <span className="text-[#2EC4B6] font-medium">{mobile}</span>
           </p>
 
           {/* OTP Inputs */}
@@ -167,14 +165,14 @@ function VerifyOTPContent() {
             {canResend ? (
               <button
                 onClick={handleResend}
-                className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1.5 mx-auto"
+                className="text-sm text-[#2EC4B6] hover:text-[#22a99d] transition-colors flex items-center gap-1.5 mx-auto"
               >
                 <RefreshCw className="w-4 h-4" />
                 Resend OTP
               </button>
             ) : (
               <p className="text-sm text-[var(--text-dim)]">
-                Resend OTP in <span className="text-indigo-400 font-medium">{resendTimer}s</span>
+                Resend OTP in <span className="text-[#2EC4B6] font-medium">{resendTimer}s</span>
               </p>
             )}
           </div>
@@ -182,7 +180,7 @@ function VerifyOTPContent() {
           <button
             onClick={() => handleVerify()}
             disabled={loading || otp.some(d => d === '')}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 text-white font-semibold text-base hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#2EC4B6] to-[#90DBF4] text-white font-semibold text-base hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -200,7 +198,7 @@ export default function VerifyPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-[var(--bg-darker)]">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#2EC4B6]" />
       </div>
     }>
       <VerifyOTPContent />

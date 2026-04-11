@@ -256,10 +256,11 @@ async function seed() {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('✅ Connected to MongoDB');
 
-    // Clear existing data
-    await Department.deleteMany({});
-    await Complaint.deleteMany({});
-    console.log('🗑️ Cleared existing data');
+    // Clear existing database to overcome residual indexes
+    if (mongoose.connection.db) {
+        await mongoose.connection.db.dropDatabase();
+        console.log('🗑️ Dropped existing database to clear old indexes');
+    }
 
     // Seed departments
     const createdDepts = await Department.insertMany(departments);

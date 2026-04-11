@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import { complaintsAPI } from '@/lib/api';
 import { motion } from 'framer-motion';
 import {
@@ -34,8 +35,10 @@ const categoryIcons = {
 
 export default function ComplaintDetailPage({ params }) {
   const { id } = use(params);
+  const { user } = useAuth();
   const [complaint, setComplaint] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -61,6 +64,24 @@ export default function ComplaintDetailPage({ params }) {
       toast.success(res.data.data.upvoted ? 'Upvoted!' : 'Removed upvote');
     } catch (error) {
       toast.error('Failed to upvote');
+    }
+  };
+
+  const handleStatusUpdate = async (newStatus) => {
+    if (!newStatus || newStatus === complaint.status) return;
+    
+    setUpdating(true);
+    try {
+      const res = await complaintsAPI.updateStatus(id, {
+        status: newStatus,
+        note: `Status updated to ${newStatus?.replace('_', ' ')} by admin`
+      });
+      setComplaint(res.data.data);
+      toast.success('Status updated successfully');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update status');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -145,6 +166,26 @@ export default function ComplaintDetailPage({ params }) {
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500/10 text-indigo-400 text-sm">
                 <Users className="w-4 h-4" />
                 Reported by {complaint.duplicateCount} users
+              </div>
+            )}
+            
+            {/* Admin Controls */}
+            {user?.role === 'admin' && (
+              <div className="ml-auto flex items-center gap-2">
+                <select
+                  value={complaint.status}
+                  onChange={(e) => handleStatusUpdate(e.target.value)}
+                  disabled={updating}
+                  className="px-3 py-2 rounded-lg bg-[var(--bg-card)] border border-[var(--border)] text-sm text-[var(--text-primary)] outline-none focus:border-indigo-500"
+                >
+                  <option value="submitted">Submitted</option>
+                  <option value="under_review">Under Review</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="escalated">Escalated</option>
+                  <option value="closed">Closed</option>
+                </select>
+                {updating && <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />}
               </div>
             )}
           </div>

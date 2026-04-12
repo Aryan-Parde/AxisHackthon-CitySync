@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { adminAPI, complaintsAPI } from '@/lib/api';
 import { motion } from 'framer-motion';
 import mapboxgl from 'mapbox-gl';
+import { getMapCenter } from '@/lib/cityCoords';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import toast from 'react-hot-toast';
 import {
@@ -65,36 +66,42 @@ export default function CityOverviewPage() {
     if (!mapContainer.current || !MAPBOX_TOKEN || complaints.length === 0 || map.current) return;
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      center: [73.8567, 18.5204], // Pune center
-      zoom: 12,
-    });
 
-    map.current.on('load', () => {
-      // Add complaint markers
-      complaints.forEach(c => {
-        if (!c.location?.coordinates) return;
-        const [lng, lat] = c.location.coordinates;
-        const color = priorityMarkerColors[c.priority?.level] || '#f59e0b';
+    getMapCenter().then(({ center, zoom, source }) => {
+      if (!mapContainer.current || map.current) return;
+      console.log(`🗺️ Overview map centered on [${center}] via ${source}`);
 
-        const el = document.createElement('div');
-        el.style.width = '14px';
-        el.style.height = '14px';
-        el.style.borderRadius = '50%';
-        el.style.backgroundColor = color;
-        el.style.border = '2px solid white';
-        el.style.cursor = 'pointer';
-        el.style.boxShadow = `0 0 8px ${color}80`;
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/dark-v11',
+        center,
+        zoom,
+      });
 
-        const marker = new mapboxgl.Marker(el)
-          .setLngLat([lng, lat])
-          .addTo(map.current);
+      map.current.on('load', () => {
+        // Add complaint markers
+        complaints.forEach(c => {
+          if (!c.location?.coordinates) return;
+          const [lng, lat] = c.location.coordinates;
+          const color = priorityMarkerColors[c.priority?.level] || '#f59e0b';
 
-        el.addEventListener('click', () => {
-          setSelectedComplaint(c);
-          setReassignDept(c.department?._id || '');
+          const el = document.createElement('div');
+          el.style.width = '14px';
+          el.style.height = '14px';
+          el.style.borderRadius = '50%';
+          el.style.backgroundColor = color;
+          el.style.border = '2px solid white';
+          el.style.cursor = 'pointer';
+          el.style.boxShadow = `0 0 8px ${color}80`;
+
+          const marker = new mapboxgl.Marker(el)
+            .setLngLat([lng, lat])
+            .addTo(map.current);
+
+          el.addEventListener('click', () => {
+            setSelectedComplaint(c);
+            setReassignDept(c.department?._id || '');
+          });
         });
       });
     });

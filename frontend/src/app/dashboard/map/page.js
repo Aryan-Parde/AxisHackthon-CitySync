@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { mapAPI } from '@/lib/api';
+import { getMapCenter } from '@/lib/cityCoords';
 import { motion } from 'framer-motion';
 import { Layers, Flame, MapPin, Filter } from 'lucide-react';
 import mapboxgl from 'mapbox-gl';
@@ -29,23 +30,36 @@ export default function MapPage() {
   useEffect(() => {
     if (!mapContainerRef.current || !MAPBOX_TOKEN) return;
 
+    let map;
     mapboxgl.accessToken = MAPBOX_TOKEN;
-    const map = new mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
-      center: [73.8567, 18.5204],
-      zoom: 12,
+
+    // Initialize map with dynamic center
+    getMapCenter().then(({ center, zoom, source }) => {
+      if (!mapContainerRef.current) return;
+      console.log(`🗺️ Map centered on [${center}] via ${source}`);
+
+      map = new mapboxgl.Map({
+        container: mapContainerRef.current,
+        style: 'mapbox://styles/mapbox/dark-v11',
+        center,
+        zoom,
+      });
+
+      map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      map.addControl(new mapboxgl.FullscreenControl(), 'top-right');
+      map.addControl(new mapboxgl.GeolocateControl({
+        positionOptions: { enableHighAccuracy: true },
+        trackUserLocation: true,
+        showUserHeading: true,
+      }), 'top-right');
+
+      map.on('load', () => {
+        mapRef.current = map;
+        loadData(map);
+      });
     });
 
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
-    map.addControl(new mapboxgl.FullscreenControl(), 'top-right');
-
-    map.on('load', () => {
-      mapRef.current = map;
-      loadData(map);
-    });
-
-    return () => map.remove();
+    return () => { if (map) map.remove(); };
   }, []);
 
   useEffect(() => {

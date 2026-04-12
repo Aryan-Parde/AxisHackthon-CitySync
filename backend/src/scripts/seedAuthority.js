@@ -28,21 +28,20 @@ async function seed() {
     for (const cred of authorityCredentials) {
       const hashedPassword = await bcrypt.hash(cred.password, 12);
       const result = await User.findOneAndUpdate(
-        { mobile: cred.mobile },
+        { username: cred.username },
         { 
           $set: { 
             username: cred.username, 
             password: hashedPassword,
-            name: cred.name 
+            name: cred.name,
+            mobile: cred.mobile,
+            role: 'admin',
+            isVerified: true
           } 
         },
-        { new: true }
+        { new: true, upsert: true }
       );
-      if (result) {
-        console.log(`✅ Updated ${cred.username} (${cred.mobile})`);
-      } else {
-        console.log(`⚠️  User not found: ${cred.mobile} — will be created on first OTP login`);
-      }
+      console.log(`✅ Seeded ${cred.username} (${cred.mobile}) — role: admin`);
     }
 
     console.log('\n🎉 Authority credentials seeded!');

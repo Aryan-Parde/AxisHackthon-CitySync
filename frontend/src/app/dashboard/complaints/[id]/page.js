@@ -454,39 +454,26 @@ export default function ComplaintDetailPage({ params }) {
           </div>
         )}
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-  {/* AI Extracted Keywords */ }
-  {
-    complaint.aiMetadata?.keywords && complaint.aiMetadata.keywords.length > 0 && (
-      <div className="glass rounded-2xl p-6">
-        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-indigo-400" />
-          AI Extracted Context
-        </h2>
-        <p className="text-xs text-[var(--text-dim)] mb-4">Keywords auto-extracted by AI classifier from the report and image</p>
-        <div className="flex flex-wrap gap-2">
-          {complaint.aiMetadata.keywords.map((kw, i) => (
-            <span key={i} className="px-3 py-1.5 bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded-lg text-xs font-semibold tracking-wide capitalize shadow-sm shadow-indigo-500/5">
-              {kw}
-            </span>
-          ))}
-        </div>
-      </div>
-    )
-  }
+        {/* AI Extracted Keywords */}
+        {complaint.aiMetadata?.keywords && complaint.aiMetadata.keywords.length > 0 && (
+          <div className="glass rounded-2xl p-6">
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-400" />
+              AI Extracted Context
+            </h2>
+            <p className="text-xs text-[var(--text-dim)] mb-4">Keywords auto-extracted by AI classifier from the report and image</p>
+            <div className="flex flex-wrap gap-2">
+              {complaint.aiMetadata.keywords.map((kw, i) => (
+                <span key={i} className="px-3 py-1.5 bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded-lg text-xs font-semibold tracking-wide capitalize shadow-sm shadow-indigo-500/5">
+                  {kw}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
-  {/* Dept. Officer Resolution Panel (authority only - submit photo + report) */ }
-  {
-    user?.role === 'authority' && complaint.status !== 'resolved' && complaint.status !== 'closed' && complaint.status !== 'fake' && (
-=======
         {/* ─── Dept. Officer Workflow Panel ─── */}
-        {user?.role === 'authority' && complaint.status !== 'resolved' && complaint.status !== 'closed' && (
->>>>>>> 24a2c68fa9a5dc53984f18ea057851ce3d8defc2
-=======
-        {/* ─── Dept. Officer Workflow Panel ─── */}
-        {user?.role === 'authority' && complaint.status !== 'resolved' && complaint.status !== 'closed' && (
->>>>>>> d0cf620f389e5d55476fbbd5860c7a08b40cce33
+        {user?.role === 'authority' && complaint.status !== 'resolved' && complaint.status !== 'closed' && complaint.status !== 'fake' && (
       <div className="glass rounded-2xl p-6 border-2 border-[#2EC4B6]/20">
         <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1 flex items-center gap-2">
           <ShieldCheck className="w-5 h-5 text-[#2EC4B6]" />
@@ -728,9 +715,11 @@ export default function ComplaintDetailPage({ params }) {
             )}
           </div>
         )}
+      </div>
+    )}
 
-        {/* ── Already marked fake ── */}
-        {complaint.status === 'fake' && (
+    {/* ── Already marked fake ── */}
+    {complaint.status === 'fake' && (
           <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
             <AlertOctagon className="w-5 h-5 text-red-400 flex-shrink-0" />
             <div>

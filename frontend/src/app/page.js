@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { authAPI } from '@/lib/api';
 import { motion, useMotionValue, useTransform, useSpring, useInView, AnimatePresence } from 'framer-motion';
-import { MapPin, Shield, Zap, BarChart3, Users, Clock, ChevronRight, ArrowRight, Loader2, Sparkles } from 'lucide-react';
+import { MapPin, Shield, Zap, BarChart3, Users, Clock, ChevronRight, ArrowRight, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 /* ─── Data ─── */
@@ -56,15 +56,7 @@ const stats = [
   { value: 8, suffix: '', label: 'City Departments' },
 ];
 
-const quickLogins = [
-  { label: 'Citizen', mobile: '9876500000', icon: '👤', color: 'from-emerald-500/20 to-teal-500/20', textColor: 'text-emerald-400' },
-  { label: 'Roads Authority', mobile: '8000000000', icon: '🛣️', color: 'from-indigo-500/20 to-cyan-500/20', textColor: 'text-indigo-400' },
-  { label: 'Water Authority', mobile: '8000000001', icon: '💧', color: 'from-blue-500/20 to-cyan-500/20', textColor: 'text-blue-400' },
-  { label: 'Sanitation Authority', mobile: '8000000002', icon: '🗑️', color: 'from-amber-500/20 to-orange-500/20', textColor: 'text-amber-400' },
-  { label: 'Lighting Authority', mobile: '8000000003', icon: '💡', color: 'from-yellow-500/20 to-orange-500/20', textColor: 'text-yellow-400' },
-  { label: 'Sewage Authority', mobile: '8000000004', icon: '🚰', color: 'from-cyan-500/20 to-blue-500/20', textColor: 'text-cyan-400' },
-  { label: 'Traffic Authority', mobile: '8000000005', icon: '🚦', color: 'from-red-500/20 to-rose-500/20', textColor: 'text-red-400' },
-];
+
 
 const steps = [
   { step: '01', title: 'Login', desc: 'Quick OTP-based mobile authentication', icon: '📱' },
@@ -231,7 +223,7 @@ function AnimatedGrid() {
 /* ─── Main Component ─── */
 export default function LandingPage() {
   const { isAuthenticated, user, loading: authLoading, logout } = useAuth();
-  const [loadingRole, setLoadingRole] = useState(null);
+
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
   const [selectedCity, setSelectedCity] = useState('');
   const [citySearch, setCitySearch] = useState('');
@@ -280,27 +272,7 @@ export default function LandingPage() {
     transition: 'background 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
   };
 
-  const handleAutoLogin = async (roleLabel, demoMobile) => {
-    setLoadingRole(roleLabel);
-    try {
-      await authAPI.sendOTP(demoMobile);
-      const verifyRes = await authAPI.verifyOTP(demoMobile, '123456');
 
-      const { token, user } = verifyRes.data.data;
-      localStorage.setItem('citysync_token', token);
-      localStorage.setItem('citysync_user', JSON.stringify(user));
-
-      const roleNames = { admin: 'Nodal Officer', authority: 'Dept. Officer', citizen: 'Citizen' };
-      toast.success(`Logged in as ${roleNames[user.role] || user.role}!`);
-
-      const redirects = { admin: '/dashboard/overview', authority: '/dashboard/work-queue' };
-      window.location.href = redirects[user.role] || '/dashboard/map';
-    } catch (error) {
-      toast.error('Quick login failed. Try the standard login page.');
-    } finally {
-      setLoadingRole(null);
-    }
-  };
 
   /* ─── Text animation variants ─── */
   const letterVariants = {
@@ -581,75 +553,7 @@ export default function LandingPage() {
             </MagneticButton>
           </motion.div>
 
-          {/* Quick Access Roles */}
-          {!isAuthenticated && (
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 1.2, ease: [0.22, 1, 0.36, 1] }}
-              className="mt-16 overflow-hidden max-w-5xl mx-auto px-4"
-            >
-              <motion.p
-                className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-6 text-center"
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 3, repeat: Infinity }}
-              >
-                Demo Quick Access • Experience the Platform
-              </motion.p>
 
-              <div className="relative group">
-                <div className="flex overflow-x-auto gap-4 pb-6 scrollbar-hide snap-x no-scrollbar mask-fade">
-                  {quickLogins.map((role, i) => (
-                    <motion.button
-                      key={i}
-                      disabled={!!loadingRole}
-                      onClick={() => handleAutoLogin(role.label, role.mobile)}
-                      initial={{ opacity: 0, x: 30 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 1.3 + i * 0.08 }}
-                      whileHover={{
-                        scale: 1.04,
-                        y: -4,
-                        transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
-                      }}
-                      whileTap={{ scale: 0.98 }}
-                      className={`flex-none w-56 p-5 rounded-2xl bg-gradient-to-br ${role.color} border border-white/5 hover:border-white/10 transition-all duration-500 text-left snap-start group/card relative overflow-hidden shadow-md shadow-black/5 hover:shadow-lg hover:shadow-black/10`}
-                    >
-                      <div className="relative z-10">
-                        <motion.span
-                          className="text-3xl block mb-3"
-                          animate={{ y: [0, -5, 0] }}
-                          transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
-                        >
-                          {role.icon}
-                        </motion.span>
-                        <h3 className={`text-base font-bold ${role.textColor} mb-1 flex items-center gap-2`}>
-                          {role.label}
-                          {loadingRole === role.label ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <ArrowRight className="w-4 h-4 opacity-0 group-hover/card:opacity-100 transition-all translate-x-[-10px] group-hover/card:translate-x-0" />
-                          )}
-                        </h3>
-                        <p className="text-xs text-[var(--text-muted)] line-clamp-1">Fast-track to {role.label.split(' ')[0]} panel</p>
-                      </div>
-
-                      {/* Hover shimmer effect */}
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
-                        initial={{ x: '-100%' }}
-                        whileHover={{ x: '100%' }}
-                        transition={{ duration: 0.6 }}
-                      />
-                    </motion.button>
-                  ))}
-                </div>
-
-                <div className="absolute -left-4 top-0 bottom-0 w-8 bg-gradient-to-r from-[var(--bg-darker)] to-transparent pointer-events-none" />
-                <div className="absolute -right-4 top-0 bottom-0 w-8 bg-gradient-to-l from-[var(--bg-darker)] to-transparent pointer-events-none" />
-              </div>
-            </motion.div>
-          )}
 
           {/* Stats with animated counters */}
           <motion.div

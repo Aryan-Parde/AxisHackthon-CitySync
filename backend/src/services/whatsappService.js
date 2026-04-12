@@ -39,6 +39,10 @@ class WhatsAppService {
       const intent = this._parseIntent(body);
 
       switch (intent.action) {
+        case 'ping':
+          console.log('   🏓 Ping-pong');
+          return await this._sendMessage(phone, `🏓 *Pong!*\n\nCitySync Bot is alive and well.\n\n⏰ Time: ${new Date().toLocaleString('en-IN')}\n🤖 Model: google/gemini-2.0-flash-001`);
+
         case 'track':
           return await this._handleTrack(phone, intent.ticketId);
 
@@ -80,6 +84,11 @@ class WhatsAppService {
     // Help
     if (lower === 'help' || lower === 'hi' || lower === 'hello' || lower === 'menu' || lower === 'start') {
       return { action: 'help' };
+    }
+
+    // Ping
+    if (lower === 'ping' || lower === 'test') {
+      return { action: 'ping' };
     }
 
     // Everything else → treat as a complaint report
@@ -332,20 +341,21 @@ class WhatsAppService {
     const toFormatted = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`;
 
     if (!twilioClient) {
-      console.log(`\n💬 WhatsApp Reply to ${to}:\n${body}\n`);
+      console.log(`\n💬 WhatsApp Reply (SIMULATED) to ${to}:\n${body}\n`);
       return { success: true, simulated: true };
     }
 
     try {
+      console.log(`   📤 Sending WhatsApp to ${to}...`);
       const msg = await twilioClient.messages.create({
         from: WHATSAPP_FROM,
         to: toFormatted,
         body
       });
-      console.log(`✅ WhatsApp sent to ${to} (SID: ${msg.sid})`);
+      console.log(`   ✅ Sent! (SID: ${msg.sid}, Status: ${msg.status})`);
       return { success: true, sid: msg.sid };
     } catch (error) {
-      console.error(`❌ WhatsApp send failed: ${error.message}`);
+      console.error(`   ❌ Send failed: ${error.message}`);
       // Fallback: log to console
       console.log(`\n💬 WhatsApp Reply (FALLBACK) to ${to}:\n${body}\n`);
       return { success: false, error: error.message };

@@ -22,24 +22,30 @@ const processedSids = new Set();
 
 async function pollMessages() {
   try {
-    // Fetch messages received in the last 1 minute (overlapping window)
+    // Fetch messages received in the last 10 minutes (overlapping window)
     // This ensures no messages are missed even if the script restarts or lags.
     // We rely on processedSids to avoid duplicate processing.
-    const oneMinuteAgo = new Date(Date.now() - 60000);
+    const tenMinutesAgo = new Date(Date.now() - 600000);
     
     const messages = await client.messages.list({
       to: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER || '+14155238886'}`,
-      dateSentAfter: oneMinuteAgo,
-      limit: 20
+      dateSentAfter: tenMinutesAgo,
+      limit: 30
     });
 
     if (messages.length > 0) {
       console.log(`\n🔍 Polled ${messages.length} recent messages...`);
+    } else {
+      // Periodic ping to show it's alive
+      if (Math.random() < 0.1) console.log('Checking Twilio for messages...');
     }
 
     for (const msg of messages) {
+      const isProcessed = processedSids.has(msg.sid);
+      console.log(`   - Found: [${msg.sid}] From: ${msg.from} Status: ${msg.status} (Processed: ${isProcessed})`);
+      
       // Skip already processed
-      if (processedSids.has(msg.sid)) continue;
+      if (isProcessed) continue;
       processedSids.add(msg.sid);
 
       // Skip outgoing messages

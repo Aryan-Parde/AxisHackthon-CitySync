@@ -6,6 +6,9 @@ async function callOpenRouter(messages) {
   if (!config.openRouterApiKey) {
     throw new Error('OpenRouter API not configured.');
   }
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -18,8 +21,11 @@ async function callOpenRouter(messages) {
       model: OPENROUTER_MODEL,
       messages: messages,
       max_tokens: 1000
-    })
+    }),
+    signal: controller.signal
   });
+
+  clearTimeout(timeoutId);
 
   if (!response.ok) {
     const errorBody = await response.text();

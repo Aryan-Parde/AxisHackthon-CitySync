@@ -23,7 +23,7 @@ connectDB();
 // Middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001'],
+  origin: '*', // Allow Vercel frontend to connect
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));

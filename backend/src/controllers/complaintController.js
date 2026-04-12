@@ -6,6 +6,7 @@ const DuplicateService = require('../services/duplicateService');
 const PriorityScoring = require('../utils/priorityScoring');
 const GeoUtils = require('../utils/geoUtils');
 const NotificationService = require('../services/notificationService');
+const GeotagService = require('../services/geotagService');
 
 // @desc    Create new complaint
 // @route   POST /api/complaints
@@ -333,6 +334,33 @@ exports.resolveComplaint = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Complaint not found' });
     }
 
+    // Geotag validation for resolution photo
+    const geotag = await GeotagService.extractGeotag(resolutionPhoto);
+    if (!geotag.isGeotagged) {
+      return res.status(400).json({
+        success: false,
+        message: 'Resolution photo must be geotagged. Please use a GPS Map Camera app to take the photo with location overlay.',
+        geotagError: true
+      });
+    }
+
+    // Validate proximity — resolution photo must be within 100m of complaint
+    if (complaint.location?.coordinates) {
+      const proximity = GeotagService.validateProximity(
+        geotag,
+        complaint.location.coordinates,
+        100
+      );
+      if (!proximity.valid) {
+        return res.status(400).json({
+          success: false,
+          message: `Resolution photo is ${proximity.distance}m away from the complaint location. Must be taken within 100m of the issue site.`,
+          proximityError: true,
+          distance: proximity.distance
+        });
+      }
+    }
+
     // Run AI photo comparison if both photos are available
     let aiVerification = { verified: true, score: 70, analysis: 'No photos to compare. Accepted on officer report.' };
 
@@ -440,6 +468,84 @@ exports.reassignComplaint = async (req, res, next) => {
       success: true,
       message: `Complaint reassigned to ${newDept.name}`,
       data: complaint
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Validate geotag from an uploaded image
+// @route   POST /api/complaints/validate-geotag
+// @access  Private
+exports.validateGeotag = async (req, res, next) => {
+  try {
+    const { image } = req.body;
+
+    if (!image) {
+      return res.status(400).json({ success: false, message: 'Image is required' });
+    }
+
+    const geotag = await GeotagService.extractGeotag(image);
+
+    if (!geotag.isGeotagged) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          isGeotagged: false,
+          message: 'This photo is not geotagged. Please use a GPS Map Camera app to take the photo with location/time overlay.'
+        }
+      });
+    }
+
+    // Validate timestamp (must be within 24 hours)
+    const timeCheck = GeotagService.validateTimestamp(geotag.timestamp, 24);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        isGeotagged: true,
+        latitude: geotag.latitude,
+        longitude: geotag.longitude,
+        city: geotag.city,
+        state: geotag.state,
+        address: geotag.address,
+        timestamp: geotag.timestamp,
+        timestampValid: timeCheck.valid,
+        timestampMessage: timeCheck.message
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get resolved complaints for public viewing
+// @route   GET /api/complaints/resolved
+// @access  Public
+exports.getResolvedComplaints = async (req, res, next) => {
+  try {
+    const { city, limit = 20, page = 1 } = req.query;
+    const skip = (page - 1) * limit;
+
+    const filter = { status: 'resolved' };
+    if (city) {
+      filter['location.address'] = { $regex: city, $options: 'i' };
+    }
+
+    const complaints = await Complaint.find(filter)
+      .select('ticketId title description category images location resolution resolvedAt createdAt')
+      .sort({ resolvedAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await Complaint.countDocuments(filter);
+
+    res.status(200).json({
+      success: true,
+      count: complaints.length,
+      total,
+      data: complaints
     });
   } catch (error) {
     next(error);

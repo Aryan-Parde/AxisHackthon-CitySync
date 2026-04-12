@@ -8,12 +8,18 @@ const {
   updateStatus,
   upvoteComplaint,
   resolveComplaint,
-  reassignComplaint
+  reassignComplaint,
+  validateGeotag,
+  getResolvedComplaints
 } = require('../controllers/complaintController');
 const { protect, authorize } = require('../middleware/auth');
 
-router.use(protect); // All complaint routes require auth
+// Public route — resolved complaints for citizens
+router.get('/resolved', getResolvedComplaints);
 
+router.use(protect); // All other complaint routes require auth
+
+router.post('/validate-geotag', validateGeotag);
 router.post('/', createComplaint);
 router.get('/', getMyComplaints);
 router.get('/nearby', getNearbyComplaints);

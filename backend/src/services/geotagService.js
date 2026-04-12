@@ -1,66 +1,47 @@
 const config = require('../config/env');
 
-const OPENROUTER_MODEL = 'google/gemini-2.5-pro'; // Fast multimodal model mapped via OpenRouter
-
-async function callOpenRouter(messages) {
-  if (!config.openRouterApiKey) {
-    throw new Error('OpenRouter API not configured.');
-  }
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${config.openRouterApiKey}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'http://localhost:5000',
-      'X-Title': 'CitySync Geotag'
-    },
-    body: JSON.stringify({
-      model: OPENROUTER_MODEL,
-      messages: messages,
-      max_tokens: 1000
-    })
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`OpenRouter API error: ${response.status} - ${errorBody}`);
-  }
-
-  const json = await response.json();
-  return json.choices[0].message.content;
-}
-
 class GeotagService {
 
   /**
-   * Extract geotag information from an image using Gemini AI Vision.
+   * Extract geotag information from an image using Google Gemini AI Vision.
    * Looks for GPS Map Camera-style overlays with lat/long, city, date/time.
    * @param {string} imageBase64 - base64 encoded image (with or without data URI prefix)
    * @returns {Object} { isGeotagged, latitude, longitude, city, address, timestamp, raw }
    */
   static async extractGeotag(imageBase64) {
-    if (!config.openRouterApiKey || !imageBase64) {
-      return { isGeotagged: false, error: 'OpenRouter API not configured or no image provided' };
+    const apiKey = config.geminiApiKey || config.openRouterApiKey;
+    if (!apiKey || !imageBase64) {
+      return { isGeotagged: false, error: 'AI API not configured or no image provided' };
     }
 
     try {
-      let cleanBase64 = imageBase64;
-      if (!cleanBase64.startsWith('data:image')) {
-          cleanBase64 = `data:image/jpeg;base64,${cleanBase64}`;
+      // Strip data URI prefix to get raw base64
+      let rawBase64 = imageBase64;
+      let mimeType = 'image/jpeg';
+      if (rawBase64.startsWith('data:image')) {
+        const match = rawBase64.match(/^data:(image\/\w+);base64,(.+)$/);
+        if (match) {
+          mimeType = match[1];
+          rawBase64 = match[2];
+        } else {
+          rawBase64 = rawBase64.split(',')[1] || rawBase64;
+        }
       }
 
       const prompt = `Analyze this image carefully. Look for any geotagging information embedded as a text overlay, watermark, or stamp on the image. 
-These markings are typically added by "GPS Map Camera" apps. The text might be in banners at the bottom.
+These markings are typically added by "GPS Map Camera" apps. The text might appear as banners at the top or bottom of the image, or as semi-transparent overlays.
 Examples of data to look for:
 - Lat 21.126735° Long 79.047921°
 - Nagpur, Maharashtra, India
 - Sunday, 12/04/2026 06:17 AM GMT +05:30
+- Plus codes like 43f2+7jr
+- Address text
 
 Extract ALL geolocation information you can find from the text overlay ON THE IMAGE itself.
-Return ONLY a valid JSON object. Do not include markdown formatting or comments.
+Return ONLY a valid JSON object with no markdown formatting, no backticks, no comments:
 
 {
-  "isGeotagged": true or false,
+  "isGeotagged": true,
   "latitude": 21.126735,
   "longitude": 79.047921,
   "city": "Nagpur",
@@ -70,16 +51,72 @@ Return ONLY a valid JSON object. Do not include markdown formatting or comments.
   "plusCode": "43f2+7jr"
 }
 
-If no text overlay with location data is found, set "isGeotagged": false and the rest to null. Ensure latitude and longitude are numbers, not strings.`;
+If no text overlay with location data is found, return:
+{"isGeotagged": false, "latitude": null, "longitude": null, "city": null, "state": null, "address": null, "timestamp": null, "plusCode": null}
 
-      let content = [];
-      content.push({ type: 'text', text: prompt });
-      content.push({ type: 'image_url', image_url: { url: cleanBase64 } });
+Ensure latitude and longitude are numbers, not strings.`;
 
-      const responseText = await callOpenRouter([{ role: 'user', content }]);
+      // Use Google Gemini API directly - try multiple models for reliability
+      const models = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+      let responseText = '';
+      let lastError = null;
 
-      
-      
+      for (const model of models) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+          
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { text: prompt },
+                  {
+                    inline_data: {
+                      mime_type: mimeType,
+                      data: rawBase64
+                    }
+                  }
+                ]
+              }],
+              generationConfig: {
+                temperature: 0.1,
+                maxOutputTokens: 1000
+              }
+            })
+          });
+
+          if (response.status === 429) {
+            console.warn(`Model ${model} rate limited, trying next...`);
+            lastError = `Rate limited on ${model}`;
+            continue;
+          }
+
+          if (!response.ok) {
+            const errorBody = await response.text();
+            console.error(`Gemini API error (${model}):`, response.status, errorBody);
+            lastError = `Gemini API error: ${response.status}`;
+            continue;
+          }
+
+          const json = await response.json();
+          responseText = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          console.log(`✅ Using model: ${model}`);
+          break; // success — stop trying
+        } catch (err) {
+          lastError = err.message;
+          console.warn(`Model ${model} failed: ${err.message}, trying next...`);
+          continue;
+        }
+      }
+
+      if (!responseText) {
+        throw new Error(lastError || 'All Gemini models failed');
+      }
+
+      console.log('\n🔍 Raw Gemini geotag response:', responseText.substring(0, 300));
+
       // Extract JSON from response
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {

@@ -926,9 +926,7 @@ export default function ComplaintDetailPage({ params }) {
             )}
           </div>
         )}
-      </div>
-    )
-  }
+
 
   {/* AI Verification Result */ }
   {

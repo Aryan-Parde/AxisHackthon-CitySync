@@ -1,6 +1,6 @@
 const config = require('../config/env');
 
-const OPENROUTER_MODEL = 'google/gemini-2.5-pro'; // Fast multimodal model mapped via OpenRouter
+const OPENROUTER_MODEL = 'google/gemini-2.0-flash-001'; // Stable multimodal model via OpenRouter
 
 // Helper for making OpenRouter calls
 async function callOpenRouter(messages) {
@@ -579,7 +579,7 @@ Return ONLY valid JSON (no markdown, no code blocks):
         content.push({ type: 'image_url', image_url: { url: cleanBase64 } });
       }
 
-      const response = await callOpenRouter([{ role: 'user', content }]);
+      const responseText = await callOpenRouter([{ role: 'user', content }]);
 
       let jsonStr = responseText;
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);

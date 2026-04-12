@@ -1,6 +1,6 @@
 const config = require('../config/env');
 
-const OPENROUTER_MODEL = 'google/gemini-2.5-pro'; // Fast multimodal model mapped via OpenRouter
+const OPENROUTER_MODEL = 'google/gemini-2.0-flash-001'; // Stable multimodal model via OpenRouter
 
 async function callOpenRouter(messages) {
   if (!config.openRouterApiKey) {
@@ -49,15 +49,19 @@ class GeotagService {
           cleanBase64 = `data:image/jpeg;base64,${cleanBase64}`;
       }
 
-      const prompt = `Analyze this image carefully. Look for any geotagging information embedded as a text overlay, watermark, or stamp on the image. 
-These markings are typically added by "GPS Map Camera" apps. The text might be in banners at the bottom.
+      const prompt = `Analyze this image carefully. Look for any geotagging information embedded as a text overlay, watermark, stamp, or banner on the image. 
+These markings are typically added by "GPS Map Camera", "Timestamp Camera", or similar apps used for evidence collection. The text is usually found in a semi-transparent or solid banner at the bottom or top of the image.
+
 Examples of data to look for:
-- Lat 21.126735° Long 79.047921°
-- Nagpur, Maharashtra, India
+- Lat 21.126735° Long 79.047921° (or Latitude/Longitude)
+- City Names: Nagpur, Maharashtra, India
+- Full Addresses: 43f2+7jr, S Ambazari Rd, Ambedkar Nagar, Nagpur...
 - Sunday, 12/04/2026 06:17 AM GMT +05:30
 
-Extract ALL geolocation information you can find from the text overlay ON THE IMAGE itself.
-Return ONLY a valid JSON object. Do not include markdown formatting or comments.
+Extract ALL geolocation information you can find from the text overlay ON THE IMAGE itself. 
+Do not guess the location from the image content (trees, buildings); ONLY extract what is written in the overlay text.
+
+Return ONLY a valid JSON object. Do not include markdown formatting or extra text.
 
 {
   "isGeotagged": true or false,

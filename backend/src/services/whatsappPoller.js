@@ -22,12 +22,20 @@ const processedSids = new Set();
 
 async function pollMessages() {
   try {
-    // Fetch messages received AFTER our last check
+    // Fetch messages received in the last 1 minute (overlapping window)
+    // This ensures no messages are missed even if the script restarts or lags.
+    // We rely on processedSids to avoid duplicate processing.
+    const oneMinuteAgo = new Date(Date.now() - 60000);
+    
     const messages = await client.messages.list({
       to: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER || '+14155238886'}`,
-      dateSentAfter: lastChecked,
-      limit: 10
+      dateSentAfter: oneMinuteAgo,
+      limit: 20
     });
+
+    if (messages.length > 0) {
+      console.log(`\n🔍 Polled ${messages.length} recent messages...`);
+    }
 
     for (const msg of messages) {
       // Skip already processed
@@ -37,10 +45,10 @@ async function pollMessages() {
       // Skip outgoing messages
       if (msg.direction !== 'inbound') continue;
 
-      console.log(`\n📨 New WhatsApp message detected!`);
+      console.log(`\n📨 NEW WHATSAPP MESSAGE:`);
+      console.log(`   SID:  ${msg.sid}`);
       console.log(`   From: ${msg.from}`);
       console.log(`   Body: ${msg.body}`);
-      console.log(`   Media: ${msg.numMedia}`);
 
       // Build a Twilio-webhook-like object
       const webhookData = {
@@ -55,17 +63,30 @@ async function pollMessages() {
           const mediaList = await client.messages(msg.sid).media.list();
           if (mediaList.length > 0) {
             webhookData.MediaUrl0 = `https://api.twilio.com${mediaList[0].uri.replace('.json', '')}`;
+            console.log(`   Media: ${webhookData.MediaUrl0}`);
           }
         } catch (e) {
-          console.error('Failed to fetch media:', e.message);
+          console.error('   ❌ Failed to fetch media:', e.message);
         }
       }
 
       // Process through our WhatsApp handler
-      await WhatsAppService.handleIncoming(webhookData);
+      try {
+        await WhatsAppService.handleIncoming(webhookData);
+        console.log(`   ✅ Processed successfully`);
+      } catch (err) {
+        console.error(`   ❌ Processing error:`, err.message);
+      }
+    }
+    
+    // Cleanup processedSids occasionally to prevent memory bloat
+    if (processedSids.size > 1000) {
+      const sidsArray = Array.from(processedSids);
+      const toKeep = sidsArray.slice(-500); // Keep last 500
+      processedSids.clear();
+      toKeep.forEach(sid => processedSids.add(sid));
     }
 
-    lastChecked = new Date();
   } catch (error) {
     console.error('Polling error:', error.message);
   }

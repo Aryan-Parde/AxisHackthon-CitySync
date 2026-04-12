@@ -7,7 +7,7 @@ exports.getMapComplaints = async (req, res, next) => {
   try {
     const { category, status, priority, bounds } = req.query;
 
-    const query = { status: { $nin: ['closed'] } };
+    const query = { status: { $nin: ['resolved', 'closed', 'fake'] } };
     if (category) query.category = category;
     if (status) query.status = status;
     if (priority) query['priority.level'] = priority;
@@ -68,7 +68,7 @@ exports.getHeatmapData = async (req, res, next) => {
 
     const query = {
       createdAt: { $gte: since },
-      status: { $nin: ['closed'] }
+      status: { $nin: ['resolved', 'closed', 'fake'] }
     };
     if (category) query.category = category;
 
@@ -101,7 +101,7 @@ exports.getHeatmapData = async (req, res, next) => {
 // @access  Private
 exports.getClusterData = async (req, res, next) => {
   try {
-    const complaints = await Complaint.find({ status: { $nin: ['closed'] } })
+    const complaints = await Complaint.find({ status: { $nin: ['resolved', 'closed', 'fake'] } })
       .select('location.coordinates category priority.level status ticketId title duplicateCount')
       .limit(1000);
 

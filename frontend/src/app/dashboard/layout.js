@@ -19,14 +19,13 @@ const citizenNav = [
 
 const officerNav = [
   { href: '/dashboard/work-queue', icon: ClipboardList, label: 'Work Queue' },
-  { href: '/dashboard/complaints', icon: List, label: 'All Complaints' },
+  { href: '/dashboard/complaints', icon: List, label: 'All Tickets' },
   { href: '/dashboard/map', icon: Map, label: 'City Map' },
 ];
 
 const nodalNav = [
   { href: '/dashboard/overview', icon: Eye, label: 'City Overview' },
-  { href: '/dashboard/all-complaints', icon: List, label: 'All Complaints' },
-  { href: '/admin', icon: Shield, label: 'Admin Dashboard' },
+  { href: '/dashboard/complaints', icon: List, label: 'Review Tickets' },
   { href: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
   { href: '/dashboard/map', icon: Map, label: 'City Map' },
 ];
@@ -36,6 +35,12 @@ export default function DashboardLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [cityName, setCityName] = useState('');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('citysync_city');
+    if (saved) setCityName(saved);
+  }, []);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -77,9 +82,7 @@ export default function DashboardLayout({ children }) {
         {/* Logo */}
         <div className="p-4 flex items-center justify-between border-b border-[var(--border)]">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#2EC4B6] to-[#90DBF4] flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-white" />
-            </div>
+            <img src="/logo-icon.png" alt="CitySync" className="w-9 h-9 rounded-lg object-contain" />
             <span className="text-lg font-bold gradient-text">CitySync</span>
           </Link>
           <button className="lg:hidden text-[var(--text-muted)]" onClick={() => setSidebarOpen(false)}>
@@ -144,7 +147,17 @@ export default function DashboardLayout({ children }) {
           >
             <Menu className="w-5 h-5" />
           </button>
-          <div className="flex-1" />
+
+          {/* City name - center */}
+          <div className="flex-1 flex justify-center">
+            {cityName && (
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#2EC4B6]/8 border border-[#2EC4B6]/15">
+                <MapPin className="w-3.5 h-3.5 text-[#2EC4B6]" />
+                <span className="text-sm font-medium text-[#22a99d]">{cityName}</span>
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center gap-3">
             <button className="p-2 rounded-lg hover:bg-[var(--bg-card-hover)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors relative">
               <Bell className="w-5 h-5" />

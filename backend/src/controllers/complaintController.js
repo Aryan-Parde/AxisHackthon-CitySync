@@ -314,6 +314,13 @@ exports.resolveComplaint = async (req, res, next) => {
   try {
     const { resolutionPhoto, actionTaken } = req.body;
 
+    if (!resolutionPhoto) {
+      return res.status(400).json({
+        success: false,
+        message: 'Resolution photo is required — upload proof of completed work'
+      });
+    }
+
     if (!actionTaken) {
       return res.status(400).json({
         success: false,
@@ -340,9 +347,16 @@ exports.resolveComplaint = async (req, res, next) => {
       aiVerification = { verified: true, score: 75, analysis: 'No original complaint photo. Resolution photo accepted.' };
     }
 
-    // Update complaint
-    complaint.status = 'resolved';
-    complaint.resolvedAt = new Date();
+    // Determine if this is an admin (nodal officer) or dept officer
+    const isAdmin = req.user.role === 'admin';
+
+    // Update complaint - officers submit evidence, only admin can fully resolve
+    if (isAdmin) {
+      complaint.status = 'resolved';
+      complaint.resolvedAt = new Date();
+    }
+    // For officers, status stays as-is (in_progress) — pending nodal approval
+
     complaint.resolution = {
       photo: resolutionPhoto || '',
       actionTaken,
@@ -355,24 +369,30 @@ exports.resolveComplaint = async (req, res, next) => {
       }
     };
 
+    const timelineNote = isAdmin
+      ? `Resolved by Nodal Officer ${req.user.name || ''}. AI Verification: ${aiVerification.score}% confidence.`
+      : `Resolution submitted by Officer ${req.user.name || ''} — pending Nodal Officer approval. AI Score: ${aiVerification.score}%`;
+
     complaint.timeline.push({
-      status: 'resolved',
+      status: isAdmin ? 'resolved' : complaint.status,
       timestamp: new Date(),
-      note: `Resolved by ${req.user.name || 'Officer'}. AI Verification: ${aiVerification.score}% confidence. ${aiVerification.analysis}`,
+      note: timelineNote,
       updatedBy: req.user._id
     });
 
     await complaint.save();
 
-    // Notify citizen
-    const citizen = await User.findById(complaint.citizen);
-    if (citizen) {
-      await NotificationService.notifyStatusUpdate(complaint, citizen);
+    // Notify citizen only if actually resolved
+    if (isAdmin) {
+      const citizen = await User.findById(complaint.citizen);
+      if (citizen) {
+        await NotificationService.notifyStatusUpdate(complaint, citizen);
+      }
     }
 
     res.status(200).json({
       success: true,
-      message: 'Complaint resolved successfully',
+      message: isAdmin ? 'Complaint resolved successfully' : 'Resolution submitted for Nodal Officer review',
       data: complaint,
       aiVerification
     });

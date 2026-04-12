@@ -30,32 +30,48 @@ class OTPService {
       expiresAt: new Date(Date.now() + config.otpExpiryMinutes * 60 * 1000)
     });
 
-    // Try to send via Twilio if configured
+    let smsSent = false;
+
+    // Send via Twilio
     if (twilioClient && process.env.TWILIO_PHONE_NUMBER) {
+      const fromNumber = process.env.TWILIO_PHONE_NUMBER.trim();
       try {
-        await twilioClient.messages.create({
+        const message = await twilioClient.messages.create({
           body: `CitySync: Your OTP code is ${otp}. It expires in ${config.otpExpiryMinutes} minutes. Do not share this with anyone.`,
-          from: process.env.TWILIO_PHONE_NUMBER,
+          from: fromNumber,
           to: mobile
         });
-        console.log(`\n✅ SMS successfully sent to ${mobile} via Twilio!`);
+        smsSent = true;
+        console.log(`\n✅ SMS sent to ${mobile} via Twilio! SID: ${message.sid}`);
       } catch (err) {
-        console.error('Failed to send SMS via Twilio. Check your Twilio Console:', err.message);
+        console.error(`\n❌ Twilio SMS failed for ${mobile}:`);
+        console.error(`   Error Code: ${err.code}`);
+        console.error(`   Message: ${err.message}`);
+        if (err.code === 21608 || err.code === 21211) {
+          console.error(`   ⚠️  This number is not verified in your Twilio trial account.`);
+          console.error(`   ➡️  Go to https://console.twilio.com/us1/develop/phone-numbers/manage/verified`);
+          console.error(`   ➡️  Add ${mobile} as a verified caller ID to receive SMS.\n`);
+        } else if (err.code === 21614) {
+          console.error(`   ⚠️  ${mobile} is not a valid mobile number or cannot receive SMS.\n`);
+        }
       }
+    } else {
+      console.log('\n⚠️  Twilio not configured — SMS will not be sent.');
     }
 
-    // Always log to console for hackathon demo purposes
+    // Always log OTP to console
     console.log(`\n📱 ========================================`);
     console.log(`   OTP for ${mobile}: ${otp}`);
+    console.log(`   SMS Sent: ${smsSent ? '✅ Yes' : '❌ No (use console OTP or 123456)'}`);
     console.log(`   Expires in ${config.otpExpiryMinutes} minutes`);
     console.log(`   ========================================\n`);
 
-    return { success: true, otpId: otpDoc._id };
+    return { success: true, otpId: otpDoc._id, smsSent };
   }
 
   // Verify OTP
   static async verifyOTP(mobile, otpInput) {
-    // 🔥 MASTER OTP BYPASS FOR FAST TESTING 🔥
+    // Master OTP bypass for demo/testing
     if (otpInput === '123456') {
       return { valid: true, message: 'OTP verified successfully' };
     }
@@ -95,9 +111,8 @@ class OTPService {
     return { valid: true, message: 'OTP verified successfully' };
   }
 
-  // Check rate limit for OTP requests (per mobile number)
+  // Check rate limit for OTP requests
   static async canSendOTP(mobile) {
-    // 15-minute limit removed as requested
     return { allowed: true };
   }
 }

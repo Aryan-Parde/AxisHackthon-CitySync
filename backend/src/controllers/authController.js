@@ -3,6 +3,61 @@ const User = require('../models/User');
 const OTPService = require('../services/otpService');
 const config = require('../config/env');
 
+// @desc    Authority login with username/password
+// @route   POST /api/auth/authority-login
+// @access  Public
+exports.authorityLogin = async (req, res, next) => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ success: false, message: 'Username and password are required' });
+    }
+
+    // Find user by username, include password field
+    const user = await User.findOne({ username: username.toLowerCase() }).select('+password');
+
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Invalid username or password' });
+    }
+
+    if (!user.password) {
+      return res.status(401).json({ success: false, message: 'This account does not have password-based login. Use OTP instead.' });
+    }
+
+    // Check password
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Invalid username or password' });
+    }
+
+    // Generate JWT
+    const token = jwt.sign(
+      { id: user._id, mobile: user.mobile, role: user.role },
+      config.jwtSecret,
+      { expiresIn: config.jwtExpiresIn }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        token,
+        user: {
+          id: user._id,
+          mobile: user.mobile,
+          name: user.name,
+          username: user.username,
+          role: user.role,
+          isVerified: true
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Send OTP to mobile number
 // @route   POST /api/auth/send-otp
 // @access  Public
@@ -36,8 +91,8 @@ exports.sendOTP = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: `OTP sent to ${mobile}`,
-      data: { mobile }
+      message: result.smsSent ? `OTP sent to ${mobile}` : `OTP generated for ${mobile} (check backend console)`,
+      data: { mobile, smsSent: result.smsSent }
     });
   } catch (error) {
     next(error);

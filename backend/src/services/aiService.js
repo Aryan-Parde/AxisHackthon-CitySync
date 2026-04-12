@@ -1,14 +1,33 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const config = require('../config/env');
 
-let genAI;
-let model;
+const OPENROUTER_MODEL = 'google/gemini-2.5-pro'; // Fast multimodal model mapped via OpenRouter
 
-try {
-  genAI = new GoogleGenerativeAI(config.geminiApiKey);
-  model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-} catch (error) {
-  console.warn('⚠️ Gemini AI not configured. Using fallback classification.');
+// Helper for making OpenRouter calls
+async function callOpenRouter(messages) {
+  if (!config.openRouterApiKey) {
+    throw new Error('OpenRouter API not configured.');
+  }
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${config.openRouterApiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'http://localhost:5000', 
+      'X-Title': 'CitySync'
+    },
+    body: JSON.stringify({
+      model: OPENROUTER_MODEL,
+      messages: messages
+    })
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`OpenRouter API error: ${response.status} - ${errorBody}`);
+  }
+
+  const json = await response.json();
+  return json.choices[0].message.content;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -133,7 +152,7 @@ class AIService {
   // ══════════════════════════════════════════════════
   static async classifyComplaint(text, imageBase64 = null) {
     try {
-      if (!model) {
+      if (!config.openRouterApiKey) {
         return this._fallback(text);
       }
 
@@ -144,19 +163,23 @@ class AIService {
       // ── Build a context-aware prompt ──
       const prompt = this._buildPrompt(hasText, hasImage, text);
 
-      // ── Build Gemini parts array ──
-      const parts = [{ text: prompt }];
+      // ── Build OpenRouter messages array ──
+      let content = [];
+      content.push({ type: 'text', text: prompt });
 
       if (hasImage) {
-        const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
-        parts.push({
-          inlineData: { mimeType: 'image/jpeg', data: cleanBase64 }
+        let cleanBase64 = imageBase64;
+        if (!cleanBase64.startsWith('data:image')) {
+            cleanBase64 = `data:image/jpeg;base64,${cleanBase64}`;
+        }
+        content.push({
+          type: 'image_url',
+          image_url: { url: cleanBase64 }
         });
       }
 
-      // ── Call Gemini ──
-      const result = await model.generateContent(parts);
-      const raw = result.response.text();
+      // ── Call OpenRouter ──
+      const raw = await callOpenRouter([{ role: 'user', content }]);
 
       // ── Extract JSON from response ──
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
@@ -405,18 +428,9 @@ OUTPUT: Respond with ONLY this JSON — nothing else:
 
   // Generate embedding for text (for duplicate detection)
   static async generateEmbedding(text) {
-    try {
-      if (!genAI) {
-        return this.simpleTFIDF(text);
-      }
-
-      const embeddingModel = genAI.getGenerativeModel({ model: 'text-embedding-004' });
-      const result = await embeddingModel.embedContent(text);
-      return result.embedding.values;
-    } catch (error) {
-      console.error('Embedding error:', error.message);
-      return this.simpleTFIDF(text);
-    }
+    // OpenRouter doesn't natively expose Gemini embeddings in the same way,
+    // so we fall back to TF-IDF for duplicate search efficiency.
+    return this.simpleTFIDF(text);
   }
 
   // Simple TF-IDF fallback for embeddings
@@ -444,7 +458,7 @@ OUTPUT: Respond with ONLY this JSON — nothing else:
   // Generate PIL draft
   static async generatePILDraft(complaint, escalations) {
     try {
-      if (!model) {
+      if (!config.openRouterApiKey) {
         return this.fallbackPILDraft(complaint, escalations);
       }
 
@@ -465,8 +479,7 @@ ${escalations.map(e => `- Level ${e.fromLevel}→${e.toLevel}: ${e.reason} (${e.
 
 Generate a formal PIL draft addressing the municipal authorities. Include reference to relevant laws and citizen rights.`;
 
-      const result = await model.generateContent(prompt);
-      return result.response.text();
+      return await callOpenRouter([{ role: 'user', content: prompt }]);
     } catch (error) {
       return this.fallbackPILDraft(complaint, escalations);
     }
@@ -510,16 +523,17 @@ Place: ____________
     `.trim();
   }
 
-  // Compare complaint photo vs resolution photo using Gemini 2.0 Flash
+  // Compare complaint photo vs resolution photo using Multimodal AI
   static async comparePhotos(complaintPhotoBase64, resolutionPhotoBase64, description) {
     try {
-      if (!model) {
+      if (!config.openRouterApiKey) {
         return this.fallbackPhotoComparison();
       }
 
-      const parts = [
-        {
-          text: `You are a civic complaint verification AI. An officer claims to have resolved a complaint. Compare the BEFORE (complaint) photo and AFTER (resolution) photo.
+      let content = [];
+      content.push({
+        type: 'text',
+        text: `You are a civic complaint verification AI. An officer claims to have resolved a complaint. Compare the BEFORE (complaint) photo and AFTER (resolution) photo.
 
 Complaint description: "${description}"
 
@@ -536,35 +550,29 @@ Return ONLY valid JSON (no markdown, no code blocks):
   "beforeDescription": "What you see in the before photo",
   "afterDescription": "What you see in the after photo"
 }`
-        }
-      ];
+      });
 
       // Add complaint photo if available
       if (complaintPhotoBase64) {
-        const cleanBase64 = complaintPhotoBase64.replace(/^data:image\/\w+;base64,/, '');
-        parts.push({
-          inlineData: {
-            mimeType: 'image/jpeg',
-            data: cleanBase64
-          }
-        });
-        parts.push({ text: 'BEFORE photo (complaint):' });
+        let cleanBase64 = complaintPhotoBase64;
+        if (!cleanBase64.startsWith('data:image')) {
+            cleanBase64 = `data:image/jpeg;base64,${cleanBase64}`;
+        }
+        content.push({ type: 'text', text: 'BEFORE photo (complaint):' });
+        content.push({ type: 'image_url', image_url: { url: cleanBase64 } });
       }
 
       // Add resolution photo
       if (resolutionPhotoBase64) {
-        const cleanBase64 = resolutionPhotoBase64.replace(/^data:image\/\w+;base64,/, '');
-        parts.push({
-          inlineData: {
-            mimeType: 'image/jpeg',
-            data: cleanBase64
-          }
-        });
-        parts.push({ text: 'AFTER photo (resolution):' });
+        let cleanBase64 = resolutionPhotoBase64;
+        if (!cleanBase64.startsWith('data:image')) {
+            cleanBase64 = `data:image/jpeg;base64,${cleanBase64}`;
+        }
+        content.push({ type: 'text', text: 'AFTER photo (resolution):' });
+        content.push({ type: 'image_url', image_url: { url: cleanBase64 } });
       }
 
-      const result = await model.generateContent(parts);
-      const response = result.response.text();
+      const response = await callOpenRouter([{ role: 'user', content }]);
 
       let jsonStr = response;
       const jsonMatch = response.match(/\{[\s\S]*\}/);

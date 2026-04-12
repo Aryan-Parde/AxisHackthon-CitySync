@@ -7,7 +7,7 @@ import { complaintsAPI } from '@/lib/api';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, MapPin, Clock, ThumbsUp, Users, AlertTriangle,
-  CheckCircle, Loader2, ChevronRight, AlertOctagon, Camera, FileText, ShieldCheck, Sparkles
+  CheckCircle, Loader2, ChevronRight, AlertOctagon, Camera, FileText, ShieldCheck
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -60,7 +60,7 @@ export default function ComplaintDetailPage({ params }) {
 
   const handleResolve = async () => {
     if (!resolutionPhoto) {
-      toast.error('Please upload a photo of the completed work');
+      toast.error('Please upload a geotagged photo of the completed work');
       return;
     }
     if (!actionTaken.trim()) {
@@ -79,7 +79,14 @@ export default function ComplaintDetailPage({ params }) {
       setComplaint(freshRes.data.data);
       toast.success('Resolution submitted!');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to resolve');
+      const errData = error.response?.data;
+      if (errData?.geotagError) {
+        toast.error('📍 Photo must be geotagged! Use GPS Map Camera app.', { duration: 6000 });
+      } else if (errData?.proximityError) {
+        toast.error(`📏 Photo is ${errData.distance}m from the complaint. Must be within 100m.`, { duration: 6000 });
+      } else {
+        toast.error(errData?.message || 'Failed to resolve');
+      }
     } finally {
       setResolving(false);
     }
@@ -437,7 +444,6 @@ export default function ComplaintDetailPage({ params }) {
           </div>
         )}
 
-<<<<<<< HEAD
         {/* AI Extracted Keywords */}
         {complaint.aiMetadata?.keywords && complaint.aiMetadata.keywords.length > 0 && (
           <div className="glass rounded-2xl p-6">
@@ -456,12 +462,8 @@ export default function ComplaintDetailPage({ params }) {
           </div>
         )}
 
-        {/* Dept. Officer Resolution Panel (authority only - submit photo + report) */}
-        {user?.role === 'authority' && complaint.status !== 'resolved' && complaint.status !== 'closed' && complaint.status !== 'fake' && (
-=======
         {/* ─── Dept. Officer Workflow Panel ─── */}
-        {user?.role === 'authority' && complaint.status !== 'resolved' && complaint.status !== 'closed' && (
->>>>>>> 24a2c68fa9a5dc53984f18ea057851ce3d8defc2
+        {user?.role === 'authority' && complaint.status !== 'resolved' && complaint.status !== 'closed' && complaint.status !== 'fake' && (
           <div className="glass rounded-2xl p-6 border-2 border-[#2EC4B6]/20">
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1 flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-[#2EC4B6]" />
@@ -656,12 +658,13 @@ export default function ComplaintDetailPage({ params }) {
                         <span className="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center">3b</span>
                         <span className="text-sm font-semibold text-[var(--text-primary)]">Submit Final Resolution</span>
                       </div>
-                      <p className="text-xs text-[var(--text-muted)] ml-8 mb-3">Upload proof that the issue has been fully resolved</p>
+                      <p className="text-xs text-[var(--text-muted)] ml-8 mb-3">Upload a <strong>geotagged</strong> photo taken at the site (use GPS Map Camera app)</p>
 
                       <div className="ml-8">
-                        <label className="text-sm font-medium text-[var(--text-secondary)] block mb-2">
-                          <Camera className="w-4 h-4 inline mr-1" /> After-Resolution Photo
+                        <label className="text-sm font-medium text-[var(--text-secondary)] block mb-1">
+                          <Camera className="w-4 h-4 inline mr-1" /> After-Resolution Photo *
                         </label>
+                        <p className="text-xs text-amber-400/80 mb-2">📍 Must be geotagged & within 100m of the complaint location</p>
                         <input
                           type="file"
                           accept="image/*"

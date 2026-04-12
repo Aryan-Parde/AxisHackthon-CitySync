@@ -7,13 +7,14 @@ import { useEffect, useState } from 'react';
 import {
   MapPin, LayoutDashboard, PlusCircle, Map, List,
   BarChart3, LogOut, Menu, X, ChevronRight,
-  Shield, Bell, ClipboardList, Eye
+  Shield, Bell, ClipboardList, Eye, CheckCircle
 } from 'lucide-react';
 
 const citizenNav = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/dashboard/complaints/new', icon: PlusCircle, label: 'Report Issue' },
   { href: '/dashboard/complaints', icon: List, label: 'My Complaints' },
+  { href: '/dashboard/resolved', icon: CheckCircle, label: 'Resolved Issues' },
   { href: '/dashboard/map', icon: Map, label: 'City Map' },
 ];
 

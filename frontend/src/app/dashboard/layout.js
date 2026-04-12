@@ -7,10 +7,11 @@ import { useEffect, useState } from 'react';
 import {
   MapPin, LayoutDashboard, PlusCircle, Map, List,
   BarChart3, LogOut, Menu, X, ChevronRight,
-  Shield, Bell, ClipboardList, Eye, CheckCircle
+  Shield, Bell, ClipboardList, Eye, CheckCircle, Home
 } from 'lucide-react';
 
 const citizenNav = [
+  { href: '/', icon: Home, label: 'Home' },
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/dashboard/complaints/new', icon: PlusCircle, label: 'Report Issue' },
   { href: '/dashboard/complaints', icon: List, label: 'My Complaints' },
@@ -19,12 +20,14 @@ const citizenNav = [
 ];
 
 const officerNav = [
+  { href: '/', icon: Home, label: 'Home' },
   { href: '/dashboard/work-queue', icon: ClipboardList, label: 'Work Queue' },
   { href: '/dashboard/complaints', icon: List, label: 'All Tickets' },
   { href: '/dashboard/map', icon: Map, label: 'City Map' },
 ];
 
 const nodalNav = [
+  { href: '/', icon: Home, label: 'Home' },
   { href: '/dashboard/overview', icon: Eye, label: 'City Overview' },
   { href: '/dashboard/complaints', icon: List, label: 'Review Tickets' },
   { href: '/admin/analytics', icon: BarChart3, label: 'Analytics' },

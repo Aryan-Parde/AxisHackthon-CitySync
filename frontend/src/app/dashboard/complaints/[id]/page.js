@@ -7,7 +7,7 @@ import { complaintsAPI } from '@/lib/api';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, MapPin, Clock, ThumbsUp, Users, AlertTriangle,
-  CheckCircle, Loader2, ChevronRight, AlertOctagon, Camera, FileText, ShieldCheck
+  CheckCircle, Loader2, ChevronRight, AlertOctagon, Camera, FileText, ShieldCheck, Gavel, ImagePlus
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -26,6 +26,7 @@ const statusConfig = {
   escalated: { color: 'text-red-500', icon: AlertTriangle, label: 'Escalated' },
   fake: { color: 'text-red-500 font-bold', icon: AlertOctagon, label: 'Fake / Rejected' },
   closed: { color: 'text-gray-500', icon: CheckCircle, label: 'Closed' },
+  appealed: { color: 'text-orange-500 font-bold', icon: Gavel, label: 'Appealed' },
 };
 
 const categoryIcons = {
@@ -48,6 +49,10 @@ export default function ComplaintDetailPage({ params }) {
   const [aiResult, setAiResult] = useState(null);
   const [progressUpdate, setProgressUpdate] = useState('');
   const [postingUpdate, setPostingUpdate] = useState(false);
+  const [appealReason, setAppealReason] = useState('');
+  const [appealPhoto, setAppealPhoto] = useState('');
+  const [appealing, setAppealing] = useState(false);
+  const [showAppealForm, setShowAppealForm] = useState(false);
   const router = useRouter();
 
   const handlePhotoUpload = (e) => {
@@ -217,6 +222,15 @@ export default function ComplaintDetailPage({ params }) {
               <StatusIcon className="w-4 h-4" />
               {sConfig.label}
             </span>
+            {complaint.problemType && (
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                complaint.problemType === 'community'
+                  ? 'bg-blue-500/15 text-blue-400 border border-blue-500/20'
+                  : 'bg-purple-500/15 text-purple-400 border border-purple-500/20'
+              }`}>
+                {complaint.problemType === 'community' ? '👥 Community' : '👤 Personal'}
+              </span>
+            )}
             {complaint.location?.address && (
               <span className="flex items-center gap-1 text-sm text-[var(--text-muted)]">
                 <MapPin className="w-4 h-4" />
@@ -805,6 +819,192 @@ export default function ComplaintDetailPage({ params }) {
                   </button>
                 </div>
                 <p className="text-xs text-[var(--text-dim)] mt-2">Approving will mark the complaint as resolved and notify the citizen</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════ */}
+        {/* CITIZEN APPEAL SECTION — Anti-corruption tool */}
+        {/* ═══════════════════════════════════════════════ */}
+        {user?.role === 'citizen' && complaint.status === 'resolved' && !complaint.appeal?.isAppealed && (
+          <div className="glass rounded-2xl p-6 border-2 border-orange-500/20">
+            <div className="flex items-center gap-3 mb-2">
+              <Gavel className="w-5 h-5 text-orange-400" />
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Problem Still Exists?</h2>
+            </div>
+            <p className="text-sm text-[var(--text-muted)] mb-4">
+              If the authorities have marked this complaint as resolved but the problem has <strong>not actually been fixed</strong>,
+              you can appeal to the <strong>Welfare Officer</strong> for an independent review. This is your right to ensure accountability.
+            </p>
+
+            {!showAppealForm ? (
+              <button
+                onClick={() => setShowAppealForm(true)}
+                className="w-full py-3 rounded-xl bg-orange-500/10 border border-orange-500/30 text-orange-500 font-semibold text-sm hover:bg-orange-500/20 transition-colors flex items-center justify-center gap-2"
+              >
+                <Gavel className="w-4 h-4" />
+                File an Appeal to Welfare Officer
+              </button>
+            ) : (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-[var(--text-secondary)] block mb-2">
+                    Why do you believe the problem is not resolved? *
+                  </label>
+                  <textarea
+                    value={appealReason}
+                    onChange={(e) => setAppealReason(e.target.value)}
+                    placeholder="Explain what is still wrong. e.g. 'The pothole was shown as filled but it's still there, the garbage was not cleaned'..."
+                    className="w-full p-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] text-sm outline-none focus:border-orange-500 resize-none"
+                    rows={3}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-[var(--text-secondary)] block mb-2">
+                    <Camera className="w-4 h-4 inline mr-1" /> Upload current photo as proof (optional)
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => setAppealPhoto(reader.result);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="w-full text-sm text-[var(--text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-orange-500/10 file:text-orange-500 hover:file:bg-orange-500/20 cursor-pointer"
+                  />
+                  {appealPhoto && (
+                    <div className="mt-2 rounded-lg overflow-hidden border border-[var(--border)] max-w-xs">
+                      <img src={appealPhoto} alt="Appeal proof" className="w-full h-40 object-cover" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={async () => {
+                      if (!appealReason.trim()) {
+                        toast.error('Please explain why you believe the problem is not resolved');
+                        return;
+                      }
+                      setAppealing(true);
+                      try {
+                        await complaintsAPI.appeal(id, { reason: appealReason, photo: appealPhoto });
+                        toast.success('Appeal submitted! A Welfare Officer will review your complaint.');
+                        const fresh = await complaintsAPI.getById(id);
+                        setComplaint(fresh.data.data);
+                        setShowAppealForm(false);
+                      } catch (err) {
+                        toast.error(err.response?.data?.message || 'Failed to submit appeal');
+                      } finally {
+                        setAppealing(false);
+                      }
+                    }}
+                    disabled={appealing || !appealReason.trim()}
+                    className="flex-1 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold text-sm hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
+                  >
+                    {appealing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Gavel className="w-4 h-4" />}
+                    {appealing ? 'Submitting appeal...' : 'Submit Appeal'}
+                  </button>
+                  <button
+                    onClick={() => { setShowAppealForm(false); setAppealReason(''); setAppealPhoto(''); }}
+                    className="px-4 py-3 rounded-xl bg-[var(--bg-card-hover)] text-[var(--text-muted)] text-sm hover:bg-[var(--border)]"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        )}
+
+        {/* Appeal Status (if already appealed) */}
+        {complaint.appeal?.isAppealed && (
+          <div className={`glass rounded-2xl p-6 border-2 ${
+            complaint.appeal.status === 'accepted' ? 'border-emerald-500/20' :
+            complaint.appeal.status === 'rejected' ? 'border-red-500/20' :
+            'border-orange-500/20'
+          }`}>
+            <div className="flex items-center gap-3 mb-2">
+              <Gavel className={`w-5 h-5 ${
+                complaint.appeal.status === 'accepted' ? 'text-emerald-400' :
+                complaint.appeal.status === 'rejected' ? 'text-red-400' :
+                'text-orange-400'
+              }`} />
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                Citizen Appeal {complaint.appeal.status === 'pending' ? '— Under Review' : 
+                  complaint.appeal.status === 'accepted' ? '— Accepted ✅' : '— Rejected'}
+              </h2>
+            </div>
+            <p className="text-sm text-[var(--text-muted)] mb-2">
+              <strong>Reason:</strong> {complaint.appeal.reason}
+            </p>
+            {complaint.appeal.photo && (
+              <div className="rounded-lg overflow-hidden border border-[var(--border)] max-w-sm mb-3">
+                <img src={complaint.appeal.photo} alt="Appeal proof" className="w-full h-40 object-cover" />
+              </div>
+            )}
+            <p className="text-xs text-[var(--text-dim)]">
+              Appealed on {new Date(complaint.appeal.appealedAt).toLocaleDateString('en-IN', {
+                day: 'numeric', month: 'short', year: 'numeric'
+              })}
+            </p>
+            {complaint.appeal.reviewNote && (
+              <div className="mt-3 p-3 rounded-lg bg-[var(--bg-card-hover)]">
+                <p className="text-xs text-[var(--text-dim)] font-semibold uppercase tracking-wider mb-1">Welfare Officer Note</p>
+                <p className="text-sm text-[var(--text-primary)]">{complaint.appeal.reviewNote}</p>
+              </div>
+            )}
+
+            {/* Admin review buttons for pending appeals */}
+            {user?.role === 'admin' && complaint.appeal.status === 'pending' && (
+              <div className="mt-4 pt-3 border-t border-[var(--border)]">
+                <p className="text-sm font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-orange-400" />
+                  Welfare Officer Review
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={async () => {
+                      const note = prompt('Add a note (optional):');
+                      try {
+                        await complaintsAPI.reviewAppeal(id, { decision: 'accepted', note: note || '' });
+                        toast.success('Appeal accepted — complaint reopened!');
+                        const fresh = await complaintsAPI.getById(id);
+                        setComplaint(fresh.data.data);
+                      } catch (err) {
+                        toast.error('Failed to review appeal');
+                      }
+                    }}
+                    className="py-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold text-sm hover:opacity-90 flex items-center justify-center gap-2"
+                  >
+                    <Gavel className="w-4 h-4" />
+                    Accept Appeal (Reopen)
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const note = prompt('Reason for rejecting the appeal:');
+                      if (!note) return;
+                      try {
+                        await complaintsAPI.reviewAppeal(id, { decision: 'rejected', note });
+                        toast.success('Appeal rejected — resolution stands');
+                        const fresh = await complaintsAPI.getById(id);
+                        setComplaint(fresh.data.data);
+                      } catch (err) {
+                        toast.error('Failed to review appeal');
+                      }
+                    }}
+                    className="py-3 rounded-xl bg-[var(--bg-card-hover)] border border-[var(--border)] text-[var(--text-secondary)] font-semibold text-sm hover:bg-[var(--border)] flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Reject (Resolution Valid)
+                  </button>
+                </div>
               </div>
             )}
           </div>

@@ -9,6 +9,8 @@ const inter = Inter({
   weight: ["300", "400", "500", "600", "700", "800"],
 });
 
+import WhatsAppButton from "@/components/WhatsAppButton";
+
 export const metadata = {
   title: "CitySync – Intelligent Urban Complaint Routing",
   description: "AI-powered civic platform for smart complaint management, routing, and resolution tracking. Report city issues, track progress, and visualize urban problems.",
@@ -27,6 +29,7 @@ export default function RootLayout({ children }) {
       <body className="min-h-full flex flex-col bg-[var(--bg-darker)] text-[var(--text-primary)] font-[Inter,system-ui,sans-serif] antialiased">
         <AuthProvider>
           {children}
+          <WhatsAppButton />
           <Toaster
             position="top-right"
             toastOptions={{

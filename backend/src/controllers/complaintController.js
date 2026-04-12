@@ -60,6 +60,7 @@ exports.createComplaint = async (req, res, next) => {
       title: title || aiResult.suggestedTitle || `${aiResult.category} issue`,
       description,
       category: aiResult.category,
+      problemType: aiResult.problemType || 'community',
       images: images || [],
       location: {
         type: 'Point',
@@ -552,3 +553,150 @@ exports.getResolvedComplaints = async (req, res, next) => {
   }
 };
 
+// @desc    Citizen appeals a resolved complaint (anti-corruption)
+// @route   POST /api/complaints/:id/appeal
+// @access  Private (citizen)
+exports.appealComplaint = async (req, res, next) => {
+  try {
+    const { reason, photo } = req.body;
+
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a reason for your appeal'
+      });
+    }
+
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    // Only the citizen who filed it can appeal
+    if (complaint.citizen.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Only the complaint owner can file an appeal' });
+    }
+
+    // Can only appeal resolved complaints
+    if (complaint.status !== 'resolved') {
+      return res.status(400).json({
+        success: false,
+        message: 'You can only appeal complaints that have been marked as resolved'
+      });
+    }
+
+    // Can only appeal once
+    if (complaint.appeal?.isAppealed) {
+      return res.status(400).json({
+        success: false,
+        message: 'This complaint has already been appealed'
+      });
+    }
+
+    complaint.appeal = {
+      isAppealed: true,
+      reason: reason.trim(),
+      photo: photo || '',
+      appealedBy: req.user._id,
+      appealedAt: new Date(),
+      status: 'pending'
+    };
+
+    complaint.status = 'appealed';
+
+    complaint.timeline.push({
+      status: 'appealed',
+      timestamp: new Date(),
+      note: `⚠️ CITIZEN APPEAL: "${reason.trim().substring(0, 100)}". Complaint reopened for Welfare Officer review.`,
+      updatedBy: req.user._id
+    });
+
+    await complaint.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Appeal submitted successfully. A welfare officer will review your complaint.',
+      data: complaint
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get appealed complaints (for welfare/admin review)
+// @route   GET /api/complaints/appeals
+// @access  Private (admin)
+exports.getAppeals = async (req, res, next) => {
+  try {
+    const complaints = await Complaint.find({
+      'appeal.isAppealed': true,
+      'appeal.status': 'pending'
+    })
+      .populate('citizen', 'name mobile')
+      .sort({ 'appeal.appealedAt': -1 })
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      count: complaints.length,
+      data: complaints
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Welfare officer reviews an appeal
+// @route   PUT /api/complaints/:id/appeal-review
+// @access  Private (admin)
+exports.reviewAppeal = async (req, res, next) => {
+  try {
+    const { decision, note } = req.body; // decision: 'accepted' | 'rejected'
+
+    if (!['accepted', 'rejected'].includes(decision)) {
+      return res.status(400).json({ success: false, message: 'Decision must be accepted or rejected' });
+    }
+
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: 'Complaint not found' });
+    }
+
+    complaint.appeal.status = decision;
+    complaint.appeal.reviewedBy = req.user._id;
+    complaint.appeal.reviewedAt = new Date();
+    complaint.appeal.reviewNote = note || '';
+
+    if (decision === 'accepted') {
+      // Reopen the complaint — resolution was fraudulent
+      complaint.status = 'in_progress';
+      complaint.resolution = {};
+      complaint.resolvedAt = null;
+      complaint.timeline.push({
+        status: 'in_progress',
+        timestamp: new Date(),
+        note: `🔴 APPEAL ACCEPTED by Welfare Officer: Previous resolution rejected. Complaint reopened for genuine resolution. ${note ? 'Note: ' + note : ''}`,
+        updatedBy: req.user._id
+      });
+    } else {
+      // Reject appeal — resolution stands
+      complaint.status = 'resolved';
+      complaint.timeline.push({
+        status: 'resolved',
+        timestamp: new Date(),
+        note: `Appeal rejected by Welfare Officer. Resolution confirmed valid. ${note ? 'Note: ' + note : ''}`,
+        updatedBy: req.user._id
+      });
+    }
+
+    await complaint.save();
+
+    res.status(200).json({
+      success: true,
+      message: decision === 'accepted' ? 'Appeal accepted — complaint reopened' : 'Appeal rejected — resolution stands',
+      data: complaint
+    });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -288,12 +288,18 @@ STEP 6 — CONFIDENCE
   • Ambiguous input → 0.40–0.60
   • Irrelevant / cannot tell → below 0.40
 
+STEP 7 — PROBLEM TYPE
+  Classify as "community" or "personal":
+  • "community" = affects multiple people / public infrastructure (potholes, garbage, streetlights, road damage, water supply, sewage, traffic, noise, illegal construction, pollution, fire hazards, parks)
+  • "personal" = affects only the individual / private matter (property tax, birth/death certificate, pension, ration card, property dispute, trade license, land issue, personal health, individual billing)
+
 OUTPUT: Respond with ONLY this JSON — nothing else:
 {
   "keywords": ["k1", "k2", "k3"],
   "issue_type": "IssueType",
   "department": "DepartmentName",
-  "confidence": 0.0
+  "confidence": 0.0,
+  "problem_type": "community"
 }`;
   }
 
@@ -322,6 +328,7 @@ OUTPUT: Respond with ONLY this JSON — nothing else:
       department:     deptEntry?.dept || null,
       confidence,
       keywords,
+      problemType:    parsed.problem_type === 'personal' ? 'personal' : 'community',
       suggestedTitle: isUnclassified ? null : `${issueType} reported`,
       severity:       confidence >= 0.8 ? 'high' : confidence >= 0.6 ? 'medium' : 'low',
       summary:        text ? text.substring(0, 100) : 'Image-based classification',

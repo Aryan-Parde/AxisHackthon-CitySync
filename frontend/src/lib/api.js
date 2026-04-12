@@ -63,6 +63,9 @@ export const complaintsAPI = {
   upvote: (id) => api.post(`/complaints/${id}/upvote`),
   validateGeotag: (image) => api.post('/complaints/validate-geotag', { image }),
   getResolved: (params) => api.get('/complaints/resolved', { params }),
+  appeal: (id, data) => api.post(`/complaints/${id}/appeal`, data),
+  getAppeals: () => api.get('/complaints/appeals'),
+  reviewAppeal: (id, data) => api.put(`/complaints/${id}/appeal-review`, data),
 };
 
 // Admin API

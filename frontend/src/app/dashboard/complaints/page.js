@@ -22,6 +22,7 @@ const statusColors = {
   escalated: 'bg-red-100 text-red-600',
   closed: 'bg-gray-100 text-gray-500',
   fake: 'bg-red-100 text-red-500',
+  appealed: 'bg-orange-100 text-orange-600',
 };
 
 const categoryIcons = {
@@ -96,6 +97,13 @@ export default function ComplaintsListPage() {
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priorityColors[c.priority?.level]}`}>
               {c.priority?.level}
             </span>
+            {c.problemType && (
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                c.problemType === 'community' ? 'bg-blue-500/15 text-blue-400' : 'bg-purple-500/15 text-purple-400'
+              }`}>
+                {c.problemType === 'community' ? '👥 Community' : '👤 Personal'}
+              </span>
+            )}
             {highlight && c.resolution?.aiVerification?.score > 0 && (
               <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                 c.resolution.aiVerification.score >= 70 ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'

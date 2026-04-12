@@ -28,6 +28,11 @@ const complaintSchema = new mongoose.Schema({
     enum: ['pothole', 'garbage', 'streetlight', 'water_supply', 'sewage', 'road_damage', 'noise', 'illegal_construction', 'traffic', 'drainage', 'other'],
     default: 'other'
   },
+  problemType: {
+    type: String,
+    enum: ['community', 'personal'],
+    default: 'community'
+  },
   images: [{
     type: String // Base64 or URL
   }],
@@ -73,7 +78,7 @@ const complaintSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['submitted', 'under_review', 'in_progress', 'resolved', 'closed', 'escalated', 'fake'],
+    enum: ['submitted', 'under_review', 'in_progress', 'resolved', 'closed', 'escalated', 'fake', 'appealed'],
     default: 'submitted'
   },
   department: {
@@ -132,6 +137,21 @@ const complaintSchema = new mongoose.Schema({
       score: { type: Number, default: 0 },       // 0-100 confidence
       analysis: { type: String, default: '' }     // AI explanation
     }
+  },
+  appeal: {
+    isAppealed: { type: Boolean, default: false },
+    reason: { type: String, default: '' },
+    photo: { type: String, default: '' },          // Citizen's proof that problem still exists
+    appealedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    appealedAt: { type: Date },
+    status: {
+      type: String,
+      enum: ['pending', 'accepted', 'rejected', ''],
+      default: ''
+    },
+    reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    reviewedAt: { type: Date },
+    reviewNote: { type: String, default: '' }
   }
 }, {
   timestamps: true

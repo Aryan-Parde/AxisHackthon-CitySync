@@ -17,7 +17,8 @@ async function callOpenRouter(messages) {
     },
     body: JSON.stringify({
       model: OPENROUTER_MODEL,
-      messages: messages
+      messages: messages,
+      max_tokens: 1500
     })
   });
 

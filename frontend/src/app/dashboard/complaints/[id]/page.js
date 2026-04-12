@@ -120,7 +120,7 @@ export default function ComplaintDetailPage({ params }) {
 
   const handleStatusUpdate = async (newStatus, customNote = null) => {
     if (!newStatus) return;
-    
+
     setUpdating(true);
     try {
       await complaintsAPI.updateStatus(id, {
@@ -246,7 +246,7 @@ export default function ComplaintDetailPage({ params }) {
                 Reported by {complaint.duplicateCount} users
               </div>
             )}
-            
+
             {/* Nodal Officer — simple status controls (when no pending approval) */}
             {user?.role === 'admin' && !complaint.resolution?.actionTaken && (
               <div className="ml-auto flex items-center gap-2">
@@ -271,22 +271,22 @@ export default function ComplaintDetailPage({ params }) {
         {/* Status Progress */}
         <div className="glass rounded-2xl p-6">
           <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Progress</h2>
-          
+
           {/* Percentage bar */}
           {(() => {
             const pct = complaint.status === 'resolved' || complaint.status === 'closed' ? 100
               : complaint.status === 'in_progress' ? 65
-              : complaint.status === 'under_review' ? 35
-              : complaint.status === 'fake' ? 100
-              : complaint.status === 'escalated' ? 50
-              : 10;
+                : complaint.status === 'under_review' ? 35
+                  : complaint.status === 'fake' ? 100
+                    : complaint.status === 'escalated' ? 50
+                      : 10;
             const statusLabel = complaint.status === 'resolved' ? '✅ Resolved'
               : complaint.status === 'closed' ? '✅ Closed'
-              : complaint.status === 'in_progress' ? '🔧 Work In Progress'
-              : complaint.status === 'under_review' ? '🔍 Under Review'
-              : complaint.status === 'fake' ? '🚫 Fake / Rejected'
-              : complaint.status === 'escalated' ? '⚠️ Escalated'
-              : '📋 Submitted';
+                : complaint.status === 'in_progress' ? '🔧 Work In Progress'
+                  : complaint.status === 'under_review' ? '🔍 Under Review'
+                    : complaint.status === 'fake' ? '🚫 Fake / Rejected'
+                      : complaint.status === 'escalated' ? '⚠️ Escalated'
+                        : '📋 Submitted';
             return (
               <div className="mb-5">
                 <div className="flex items-center justify-between mb-2">
@@ -295,11 +295,10 @@ export default function ComplaintDetailPage({ params }) {
                 </div>
                 <div className="h-3 rounded-full bg-[var(--bg-card-hover)] overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-1000 ${
-                      complaint.status === 'fake' ? 'bg-gradient-to-r from-red-500 to-red-400'
-                      : complaint.status === 'escalated' ? 'bg-gradient-to-r from-amber-500 to-orange-400'
-                      : 'bg-gradient-to-r from-[#2EC4B6] to-[#90DBF4]'
-                    }`}
+                    className={`h-full rounded-full transition-all duration-1000 ${complaint.status === 'fake' ? 'bg-gradient-to-r from-red-500 to-red-400'
+                        : complaint.status === 'escalated' ? 'bg-gradient-to-r from-amber-500 to-orange-400'
+                          : 'bg-gradient-to-r from-[#2EC4B6] to-[#90DBF4]'
+                      }`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -315,11 +314,10 @@ export default function ComplaintDetailPage({ params }) {
               return (
                 <div key={s} className="flex items-center flex-1">
                   <div className="flex flex-col items-center">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                      isDone
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isDone
                         ? 'bg-gradient-to-br from-[#2EC4B6] to-[#90DBF4] text-white'
                         : 'bg-[var(--bg-card-hover)] text-[var(--text-dim)]'
-                    } ${isCurrent ? 'ring-2 ring-[#2EC4B6]/50 ring-offset-2 ring-offset-[var(--bg-card)]' : ''}`}>
+                      } ${isCurrent ? 'ring-2 ring-[#2EC4B6]/50 ring-offset-2 ring-offset-[var(--bg-card)]' : ''}`}>
                       {isDone ? '✓' : i + 1}
                     </div>
                     <p className={`text-xs mt-2 capitalize font-medium ${isDone ? 'text-[var(--text-primary)]' : 'text-[var(--text-dim)]'}`}>
@@ -327,9 +325,8 @@ export default function ComplaintDetailPage({ params }) {
                     </p>
                   </div>
                   {i < statusOrder.length - 1 && (
-                    <div className={`flex-1 h-0.5 mx-2 rounded ${
-                      i < currentIdx ? 'bg-gradient-to-r from-[#2EC4B6] to-[#90DBF4]' : 'bg-[var(--border)]'
-                    }`} />
+                    <div className={`flex-1 h-0.5 mx-2 rounded ${i < currentIdx ? 'bg-gradient-to-r from-[#2EC4B6] to-[#90DBF4]' : 'bg-[var(--border)]'
+                      }`} />
                   )}
                 </div>
               );
@@ -375,16 +372,15 @@ export default function ComplaintDetailPage({ params }) {
                 const isProgress = event.note?.startsWith('Progress update:');
                 const statusIcon = event.status === 'resolved' ? '✅'
                   : event.status === 'in_progress' ? '🔧'
-                  : event.status === 'under_review' ? '🔍'
-                  : event.status === 'fake' ? '🚫'
-                  : event.status === 'escalated' ? '⚠️'
-                  : event.status === 'submitted' ? '📋' : '📝';
+                    : event.status === 'under_review' ? '🔍'
+                      : event.status === 'fake' ? '🚫'
+                        : event.status === 'escalated' ? '⚠️'
+                          : event.status === 'submitted' ? '📋' : '📝';
                 return (
                   <div key={i} className="flex gap-4">
                     <div className="flex flex-col items-center">
-                      <div className={`w-3 h-3 rounded-full ${
-                        i === 0 ? 'bg-[#2EC4B6]' : isProgress ? 'bg-indigo-400' : 'bg-[var(--border)]'
-                      }`} />
+                      <div className={`w-3 h-3 rounded-full ${i === 0 ? 'bg-[#2EC4B6]' : isProgress ? 'bg-indigo-400' : 'bg-[var(--border)]'
+                        }`} />
                       {i < complaint.timeline.length - 1 && (
                         <div className="w-0.5 h-full bg-[var(--border)] min-h-[40px]" />
                       )}
@@ -444,390 +440,406 @@ export default function ComplaintDetailPage({ params }) {
           </div>
         )}
 
-        {/* AI Extracted Keywords */}
-        {complaint.aiMetadata?.keywords && complaint.aiMetadata.keywords.length > 0 && (
-          <div className="glass rounded-2xl p-6">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-indigo-400" />
-              AI Extracted Context
-            </h2>
-            <p className="text-xs text-[var(--text-dim)] mb-4">Keywords auto-extracted by AI classifier from the report and image</p>
-            <div className="flex flex-wrap gap-2">
-              {complaint.aiMetadata.keywords.map((kw, i) => (
-                <span key={i} className="px-3 py-1.5 bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded-lg text-xs font-semibold tracking-wide capitalize shadow-sm shadow-indigo-500/5">
-                  {kw}
-                </span>
-              ))}
+<<<<<<< HEAD
+<<<<<<< HEAD
+  {/* AI Extracted Keywords */ }
+  {
+    complaint.aiMetadata?.keywords && complaint.aiMetadata.keywords.length > 0 && (
+      <div className="glass rounded-2xl p-6">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-indigo-400" />
+          AI Extracted Context
+        </h2>
+        <p className="text-xs text-[var(--text-dim)] mb-4">Keywords auto-extracted by AI classifier from the report and image</p>
+        <div className="flex flex-wrap gap-2">
+          {complaint.aiMetadata.keywords.map((kw, i) => (
+            <span key={i} className="px-3 py-1.5 bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded-lg text-xs font-semibold tracking-wide capitalize shadow-sm shadow-indigo-500/5">
+              {kw}
+            </span>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  {/* Dept. Officer Resolution Panel (authority only - submit photo + report) */ }
+  {
+    user?.role === 'authority' && complaint.status !== 'resolved' && complaint.status !== 'closed' && complaint.status !== 'fake' && (
+=======
+        {/* ─── Dept. Officer Workflow Panel ─── */}
+        {user?.role === 'authority' && complaint.status !== 'resolved' && complaint.status !== 'closed' && (
+>>>>>>> 24a2c68fa9a5dc53984f18ea057851ce3d8defc2
+=======
+        {/* ─── Dept. Officer Workflow Panel ─── */}
+        {user?.role === 'authority' && complaint.status !== 'resolved' && complaint.status !== 'closed' && (
+>>>>>>> d0cf620f389e5d55476fbbd5860c7a08b40cce33
+      <div className="glass rounded-2xl p-6 border-2 border-[#2EC4B6]/20">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1 flex items-center gap-2">
+          <ShieldCheck className="w-5 h-5 text-[#2EC4B6]" />
+          Officer Actions
+        </h2>
+        <p className="text-xs text-[var(--text-dim)] mb-5">Update complaint progress based on your site visit</p>
+
+        {/* ── STEP 1: Site Verification (only when submitted) ── */}
+        {complaint.status === 'submitted' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-6 h-6 rounded-full bg-[#2EC4B6] text-white text-xs font-bold flex items-center justify-center">1</span>
+              <span className="text-sm font-semibold text-[var(--text-primary)]">Site Verification</span>
+            </div>
+            <p className="text-xs text-[var(--text-muted)] -mt-2 ml-8">Visit the location and upload a photo to verify the complaint</p>
+
+            {/* Photo Upload */}
+            <div className="ml-8">
+              <label className="text-sm font-medium text-[var(--text-secondary)] block mb-2">
+                <Camera className="w-4 h-4 inline mr-1" /> Site Visit Photo
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                className="w-full text-sm text-[var(--text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#2EC4B6]/10 file:text-[#2EC4B6] hover:file:bg-[#2EC4B6]/20 cursor-pointer"
+              />
+              {resolutionPhoto && (
+                <div className="mt-2 rounded-lg overflow-hidden border border-[var(--border)] max-w-xs">
+                  <img src={resolutionPhoto} alt="Site visit" className="w-full h-40 object-cover" />
+                </div>
+              )}
+            </div>
+
+            {/* Verification Note */}
+            <div className="ml-8">
+              <label className="text-sm font-medium text-[var(--text-secondary)] block mb-2">
+                <FileText className="w-4 h-4 inline mr-1" /> Verification Note
+              </label>
+              <textarea
+                value={actionTaken}
+                onChange={(e) => setActionTaken(e.target.value)}
+                placeholder="Describe what you observed at the site..."
+                className="w-full p-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] text-sm outline-none focus:border-[#2EC4B6] resize-none"
+                rows={2}
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="ml-8 grid grid-cols-2 gap-3">
+              <button
+                onClick={async () => {
+                  if (!resolutionPhoto) {
+                    toast.error('Upload a site photo to verify the complaint');
+                    return;
+                  }
+                  setResolving(true);
+                  try {
+                    await complaintsAPI.resolve(id, {
+                      resolutionPhoto,
+                      actionTaken: actionTaken || 'Complaint verified at site. Issue confirmed.'
+                    });
+                    await handleStatusUpdate('under_review', actionTaken || 'Site visit completed. Complaint verified by officer.');
+                    toast.success('Complaint verified! Status updated.');
+                  } catch (err) {
+                    toast.error('Failed to update');
+                  } finally {
+                    setResolving(false);
+                  }
+                }}
+                disabled={resolving}
+                className="py-2.5 rounded-xl bg-gradient-to-r from-[#2EC4B6] to-[#90DBF4] text-white font-semibold text-sm hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {resolving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                ✅ Verified
+              </button>
+              <button
+                onClick={async () => {
+                  if (!resolutionPhoto) {
+                    toast.error('Upload a photo of the site to prove the complaint is fake');
+                    return;
+                  }
+                  if (!actionTaken.trim()) {
+                    toast.error('Provide a reason why this complaint is fake');
+                    return;
+                  }
+                  setResolving(true);
+                  try {
+                    await complaintsAPI.resolve(id, {
+                      resolutionPhoto,
+                      actionTaken: `FAKE: ${actionTaken}`
+                    });
+                    await handleStatusUpdate('fake', actionTaken);
+                    toast.success('Complaint marked as fake');
+                  } catch (err) {
+                    toast.error('Failed to update');
+                  } finally {
+                    setResolving(false);
+                  }
+                }}
+                disabled={resolving}
+                className="py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 font-semibold text-sm hover:bg-red-500/20 disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {resolving ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertOctagon className="w-4 h-4" />}
+                🚫 Fake
+              </button>
             </div>
           </div>
         )}
 
-        {/* ─── Dept. Officer Workflow Panel ─── */}
-        {user?.role === 'authority' && complaint.status !== 'resolved' && complaint.status !== 'closed' && complaint.status !== 'fake' && (
-          <div className="glass rounded-2xl p-6 border-2 border-[#2EC4B6]/20">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1 flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-[#2EC4B6]" />
-              Officer Actions
-            </h2>
-            <p className="text-xs text-[var(--text-dim)] mb-5">Update complaint progress based on your site visit</p>
+        {/* ── STEP 2: Begin Work (when under_review) ── */}
+        {complaint.status === 'under_review' && (
+          <div className="mt-6 pt-5 border-t border-[var(--border)]">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-6 h-6 rounded-full bg-indigo-500 text-white text-xs font-bold flex items-center justify-center">2</span>
+              <span className="text-sm font-semibold text-[var(--text-primary)]">Start Resolution Work</span>
+            </div>
+            <p className="text-xs text-[var(--text-muted)] ml-8 mb-3">Mark that repair/resolution work has started</p>
+            <button
+              onClick={() => handleStatusUpdate('in_progress', 'Resolution work has been started by the department officer.')}
+              disabled={updating}
+              className="ml-8 px-6 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-500 font-semibold text-sm hover:bg-indigo-500/20 disabled:opacity-40 flex items-center gap-2"
+            >
+              {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
+              🔧 Start Work
+            </button>
+          </div>
+        )}
 
-            {/* ── STEP 1: Site Verification (only when submitted) ── */}
-            {complaint.status === 'submitted' && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-[#2EC4B6] text-white text-xs font-bold flex items-center justify-center">1</span>
-                  <span className="text-sm font-semibold text-[var(--text-primary)]">Site Verification</span>
+        {/* ── STEP 3: In Progress ── */}
+        {complaint.status === 'in_progress' && (
+          <div className="space-y-5">
+            {/* If officer already submitted resolution → show pending state */}
+            {complaint.resolution?.actionTaken ? (
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                <Clock className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-amber-400">Resolution Pending Approval</p>
+                  <p className="text-xs text-amber-400/70 mt-1">Your resolution has been submitted and is awaiting Nodal Officer approval.</p>
+                  <div className="mt-3 p-2.5 rounded-lg bg-[var(--bg-card-hover)]">
+                    <p className="text-xs text-[var(--text-dim)] font-semibold uppercase tracking-wider mb-1">Your Report</p>
+                    <p className="text-sm text-[var(--text-primary)]">{complaint.resolution.actionTaken}</p>
+                  </div>
                 </div>
-                <p className="text-xs text-[var(--text-muted)] -mt-2 ml-8">Visit the location and upload a photo to verify the complaint</p>
-
-                {/* Photo Upload */}
-                <div className="ml-8">
-                  <label className="text-sm font-medium text-[var(--text-secondary)] block mb-2">
-                    <Camera className="w-4 h-4 inline mr-1" /> Site Visit Photo
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    className="w-full text-sm text-[var(--text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#2EC4B6]/10 file:text-[#2EC4B6] hover:file:bg-[#2EC4B6]/20 cursor-pointer"
-                  />
-                  {resolutionPhoto && (
-                    <div className="mt-2 rounded-lg overflow-hidden border border-[var(--border)] max-w-xs">
-                      <img src={resolutionPhoto} alt="Site visit" className="w-full h-40 object-cover" />
-                    </div>
-                  )}
+              </div>
+            ) : (
+              <>
+                {/* 3A: Post Progress Update */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-6 h-6 rounded-full bg-indigo-500 text-white text-xs font-bold flex items-center justify-center">3a</span>
+                    <span className="text-sm font-semibold text-[var(--text-primary)]">Post Progress Update</span>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] ml-8 mb-3">Keep citizens & nodal officer informed about ongoing work</p>
+                  <div className="ml-8 flex gap-2">
+                    <input
+                      type="text"
+                      value={progressUpdate}
+                      onChange={(e) => setProgressUpdate(e.target.value)}
+                      placeholder="e.g. Crew dispatched, materials procured, 50% complete..."
+                      className="flex-1 px-3 py-2.5 rounded-lg bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] text-sm outline-none focus:border-indigo-500"
+                    />
+                    <button
+                      onClick={async () => {
+                        if (!progressUpdate.trim()) return;
+                        setPostingUpdate(true);
+                        try {
+                          await handleStatusUpdate('in_progress', `Progress update: ${progressUpdate}`);
+                          setProgressUpdate('');
+                          toast.success('Progress update posted!');
+                        } catch (err) {
+                          toast.error('Failed to post update');
+                        } finally {
+                          setPostingUpdate(false);
+                        }
+                      }}
+                      disabled={postingUpdate || !progressUpdate.trim()}
+                      className="px-4 py-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-500 font-medium text-sm hover:bg-indigo-500/20 disabled:opacity-40 flex items-center gap-1.5 flex-shrink-0"
+                    >
+                      {postingUpdate ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
+                      Post
+                    </button>
+                  </div>
                 </div>
 
-                {/* Verification Note */}
-                <div className="ml-8">
-                  <label className="text-sm font-medium text-[var(--text-secondary)] block mb-2">
-                    <FileText className="w-4 h-4 inline mr-1" /> Verification Note
-                  </label>
-                  <textarea
-                    value={actionTaken}
-                    onChange={(e) => setActionTaken(e.target.value)}
-                    placeholder="Describe what you observed at the site..."
-                    className="w-full p-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] text-sm outline-none focus:border-[#2EC4B6] resize-none"
-                    rows={2}
-                  />
-                </div>
+                {/* Divider */}
+                <div className="border-t border-[var(--border)]" />
 
-                {/* Action Buttons */}
-                <div className="ml-8 grid grid-cols-2 gap-3">
+                {/* 3B: Submit Final Resolution */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center">3b</span>
+                    <span className="text-sm font-semibold text-[var(--text-primary)]">Submit Final Resolution</span>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] ml-8 mb-3">Upload a <strong>geotagged</strong> photo taken at the site (use GPS Map Camera app)</p>
+
+                  <div className="ml-8">
+                    <label className="text-sm font-medium text-[var(--text-secondary)] block mb-1">
+                      <Camera className="w-4 h-4 inline mr-1" /> After-Resolution Photo *
+                    </label>
+                    <p className="text-xs text-amber-400/80 mb-2">📍 Must be geotagged & within 100m of the complaint location</p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="w-full text-sm text-[var(--text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-emerald-500/10 file:text-emerald-500 hover:file:bg-emerald-500/20 cursor-pointer"
+                    />
+                    {resolutionPhoto && (
+                      <div className="mt-2 rounded-lg overflow-hidden border border-[var(--border)] max-w-xs">
+                        <img src={resolutionPhoto} alt="Resolution" className="w-full h-40 object-cover" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="ml-8 mt-3">
+                    <label className="text-sm font-medium text-[var(--text-secondary)] block mb-2">
+                      <FileText className="w-4 h-4 inline mr-1" /> Resolution Report
+                    </label>
+                    <textarea
+                      value={actionTaken}
+                      onChange={(e) => setActionTaken(e.target.value)}
+                      placeholder="Describe what was done to fully resolve the issue..."
+                      className="w-full p-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] text-sm outline-none focus:border-emerald-500 resize-none"
+                      rows={3}
+                    />
+                  </div>
+
                   <button
-                    onClick={async () => {
-                      if (!resolutionPhoto) {
-                        toast.error('Upload a site photo to verify the complaint');
-                        return;
-                      }
-                      setResolving(true);
-                      try {
-                        await complaintsAPI.resolve(id, {
-                          resolutionPhoto,
-                          actionTaken: actionTaken || 'Complaint verified at site. Issue confirmed.'
-                        });
-                        await handleStatusUpdate('under_review', actionTaken || 'Site visit completed. Complaint verified by officer.');
-                        toast.success('Complaint verified! Status updated.');
-                      } catch (err) {
-                        toast.error('Failed to update');
-                      } finally {
-                        setResolving(false);
-                      }
-                    }}
-                    disabled={resolving}
-                    className="py-2.5 rounded-xl bg-gradient-to-r from-[#2EC4B6] to-[#90DBF4] text-white font-semibold text-sm hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
+                    onClick={handleResolve}
+                    disabled={resolving || !actionTaken.trim() || !resolutionPhoto}
+                    className="ml-8 mt-3 w-[calc(100%-2rem)] py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold text-sm hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     {resolving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                    ✅ Verified
+                    {resolving ? 'Verifying with AI...' : '📸 Submit Resolution for Review'}
                   </button>
-                  <button
-                    onClick={async () => {
-                      if (!resolutionPhoto) {
-                        toast.error('Upload a photo of the site to prove the complaint is fake');
-                        return;
-                      }
-                      if (!actionTaken.trim()) {
-                        toast.error('Provide a reason why this complaint is fake');
-                        return;
-                      }
-                      setResolving(true);
-                      try {
-                        await complaintsAPI.resolve(id, {
-                          resolutionPhoto,
-                          actionTaken: `FAKE: ${actionTaken}`
-                        });
-                        await handleStatusUpdate('fake', actionTaken);
-                        toast.success('Complaint marked as fake');
-                      } catch (err) {
-                        toast.error('Failed to update');
-                      } finally {
-                        setResolving(false);
-                      }
-                    }}
-                    disabled={resolving}
-                    className="py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 font-semibold text-sm hover:bg-red-500/20 disabled:opacity-40 flex items-center justify-center gap-2"
-                  >
-                    {resolving ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertOctagon className="w-4 h-4" />}
-                    🚫 Fake
-                  </button>
+                  <p className="text-xs text-[var(--text-dim)] ml-8 mt-1">Nodal Officer will review and mark as resolved</p>
                 </div>
-              </div>
-            )}
-
-            {/* ── STEP 2: Begin Work (when under_review) ── */}
-            {complaint.status === 'under_review' && (
-              <div className="mt-6 pt-5 border-t border-[var(--border)]">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-indigo-500 text-white text-xs font-bold flex items-center justify-center">2</span>
-                  <span className="text-sm font-semibold text-[var(--text-primary)]">Start Resolution Work</span>
-                </div>
-                <p className="text-xs text-[var(--text-muted)] ml-8 mb-3">Mark that repair/resolution work has started</p>
-                <button
-                  onClick={() => handleStatusUpdate('in_progress', 'Resolution work has been started by the department officer.')}
-                  disabled={updating}
-                  className="ml-8 px-6 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-500 font-semibold text-sm hover:bg-indigo-500/20 disabled:opacity-40 flex items-center gap-2"
-                >
-                  {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
-                  🔧 Start Work
-                </button>
-              </div>
-            )}
-
-            {/* ── STEP 3: In Progress ── */}
-            {complaint.status === 'in_progress' && (
-              <div className="space-y-5">
-                {/* If officer already submitted resolution → show pending state */}
-                {complaint.resolution?.actionTaken ? (
-                  <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                    <Clock className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-amber-400">Resolution Pending Approval</p>
-                      <p className="text-xs text-amber-400/70 mt-1">Your resolution has been submitted and is awaiting Nodal Officer approval.</p>
-                      <div className="mt-3 p-2.5 rounded-lg bg-[var(--bg-card-hover)]">
-                        <p className="text-xs text-[var(--text-dim)] font-semibold uppercase tracking-wider mb-1">Your Report</p>
-                        <p className="text-sm text-[var(--text-primary)]">{complaint.resolution.actionTaken}</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {/* 3A: Post Progress Update */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="w-6 h-6 rounded-full bg-indigo-500 text-white text-xs font-bold flex items-center justify-center">3a</span>
-                        <span className="text-sm font-semibold text-[var(--text-primary)]">Post Progress Update</span>
-                      </div>
-                      <p className="text-xs text-[var(--text-muted)] ml-8 mb-3">Keep citizens & nodal officer informed about ongoing work</p>
-                      <div className="ml-8 flex gap-2">
-                        <input
-                          type="text"
-                          value={progressUpdate}
-                          onChange={(e) => setProgressUpdate(e.target.value)}
-                          placeholder="e.g. Crew dispatched, materials procured, 50% complete..."
-                          className="flex-1 px-3 py-2.5 rounded-lg bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] text-sm outline-none focus:border-indigo-500"
-                        />
-                        <button
-                          onClick={async () => {
-                            if (!progressUpdate.trim()) return;
-                            setPostingUpdate(true);
-                            try {
-                              await handleStatusUpdate('in_progress', `Progress update: ${progressUpdate}`);
-                              setProgressUpdate('');
-                              toast.success('Progress update posted!');
-                            } catch (err) {
-                              toast.error('Failed to post update');
-                            } finally {
-                              setPostingUpdate(false);
-                            }
-                          }}
-                          disabled={postingUpdate || !progressUpdate.trim()}
-                          className="px-4 py-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-500 font-medium text-sm hover:bg-indigo-500/20 disabled:opacity-40 flex items-center gap-1.5 flex-shrink-0"
-                        >
-                          {postingUpdate ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
-                          Post
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Divider */}
-                    <div className="border-t border-[var(--border)]" />
-
-                    {/* 3B: Submit Final Resolution */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold flex items-center justify-center">3b</span>
-                        <span className="text-sm font-semibold text-[var(--text-primary)]">Submit Final Resolution</span>
-                      </div>
-                      <p className="text-xs text-[var(--text-muted)] ml-8 mb-3">Upload a <strong>geotagged</strong> photo taken at the site (use GPS Map Camera app)</p>
-
-                      <div className="ml-8">
-                        <label className="text-sm font-medium text-[var(--text-secondary)] block mb-1">
-                          <Camera className="w-4 h-4 inline mr-1" /> After-Resolution Photo *
-                        </label>
-                        <p className="text-xs text-amber-400/80 mb-2">📍 Must be geotagged & within 100m of the complaint location</p>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handlePhotoUpload}
-                          className="w-full text-sm text-[var(--text-muted)] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-emerald-500/10 file:text-emerald-500 hover:file:bg-emerald-500/20 cursor-pointer"
-                        />
-                        {resolutionPhoto && (
-                          <div className="mt-2 rounded-lg overflow-hidden border border-[var(--border)] max-w-xs">
-                            <img src={resolutionPhoto} alt="Resolution" className="w-full h-40 object-cover" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="ml-8 mt-3">
-                        <label className="text-sm font-medium text-[var(--text-secondary)] block mb-2">
-                          <FileText className="w-4 h-4 inline mr-1" /> Resolution Report
-                        </label>
-                        <textarea
-                          value={actionTaken}
-                          onChange={(e) => setActionTaken(e.target.value)}
-                          placeholder="Describe what was done to fully resolve the issue..."
-                          className="w-full p-3 rounded-lg bg-[var(--bg-input)] border border-[var(--border)] text-[var(--text-primary)] text-sm outline-none focus:border-emerald-500 resize-none"
-                          rows={3}
-                        />
-                      </div>
-
-                      <button
-                        onClick={handleResolve}
-                        disabled={resolving || !actionTaken.trim() || !resolutionPhoto}
-                        className="ml-8 mt-3 w-[calc(100%-2rem)] py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold text-sm hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
-                      >
-                        {resolving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                        {resolving ? 'Verifying with AI...' : '📸 Submit Resolution for Review'}
-                      </button>
-                      <p className="text-xs text-[var(--text-dim)] ml-8 mt-1">Nodal Officer will review and mark as resolved</p>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* ── Already marked fake ── */}
-            {complaint.status === 'fake' && (
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
-                <AlertOctagon className="w-5 h-5 text-red-400 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-red-400">Complaint marked as Fake / Invalid</p>
-                  <p className="text-xs text-red-400/70 mt-0.5">This complaint has been rejected after site verification</p>
-                </div>
-              </div>
-            )}
-
-            {/* ── Escalated ── */}
-            {complaint.status === 'escalated' && (
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-amber-400">Complaint Escalated</p>
-                  <p className="text-xs text-amber-400/70 mt-0.5">This complaint has been escalated to higher authorities. Awaiting further instructions.</p>
-                </div>
-              </div>
+              </>
             )}
           </div>
         )}
 
-        {/* AI Verification Result */}
-        {(aiResult || complaint.resolution?.aiVerification?.score > 0) && (
-          <div className={`glass rounded-2xl p-6 border-2 ${
-            (aiResult?.score || complaint.resolution?.aiVerification?.score) >= 70
-              ? 'border-emerald-500/30 bg-emerald-500/5'
-              : 'border-amber-500/30 bg-amber-500/5'
-          }`}>
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
-              🤖 AI Verification Result
-            </h2>
-            <div className="flex items-center gap-4 mb-3">
-              <div className="text-center">
-                <p className="text-3xl font-bold text-[var(--text-primary)]">
-                  {aiResult?.score || complaint.resolution?.aiVerification?.score}%
-                </p>
-                <p className="text-xs text-[var(--text-muted)]">Confidence</p>
-              </div>
-              <div className="flex-1">
-                <div className="h-3 rounded-full bg-[var(--bg-card-hover)] overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-1000 ${
-                      (aiResult?.score || complaint.resolution?.aiVerification?.score) >= 70
-                        ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
-                        : 'bg-gradient-to-r from-amber-500 to-orange-500'
-                    }`}
-                    style={{ width: `${aiResult?.score || complaint.resolution?.aiVerification?.score}%` }}
-                  />
-                </div>
-              </div>
+        {/* ── Already marked fake ── */}
+        {complaint.status === 'fake' && (
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+            <AlertOctagon className="w-5 h-5 text-red-400 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-red-400">Complaint marked as Fake / Invalid</p>
+              <p className="text-xs text-red-400/70 mt-0.5">This complaint has been rejected after site verification</p>
             </div>
-            <p className="text-sm text-[var(--text-muted)] leading-relaxed">
-              {aiResult?.analysis || complaint.resolution?.aiVerification?.analysis}
-            </p>
           </div>
         )}
 
-        {/* Resolution Report + Nodal Officer Approval Panel */}
-        {(complaint.resolution?.actionTaken || complaint.resolution?.photo) && (
-          <div className="glass rounded-2xl p-6 border-2 border-indigo-500/20">
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1 flex items-center gap-2">
-              📋 Officer&apos;s Resolution Report
-            </h2>
-            <p className="text-xs text-[var(--text-dim)] mb-4">
-              {complaint.status === 'resolved' ? 'Approved by Nodal Officer' : 'Submitted by the Department Officer — pending Nodal Officer approval'}
-            </p>
-
-            {complaint.resolution.actionTaken && (
-              <div className="mb-4 p-3 rounded-lg bg-[var(--bg-card-hover)]">
-                <p className="text-xs font-semibold text-[var(--text-dim)] mb-1 uppercase tracking-wider">Action Taken</p>
-                <p className="text-sm text-[var(--text-primary)] leading-relaxed">{complaint.resolution.actionTaken}</p>
-              </div>
-            )}
-
-            {complaint.resolution.photo && (
-              <div className="mb-4">
-                <p className="text-xs font-semibold text-[var(--text-dim)] mb-2 uppercase tracking-wider">Resolution Photo</p>
-                <div className="rounded-xl overflow-hidden border border-[var(--border)] max-w-md">
-                  <img src={complaint.resolution.photo} alt="Resolution proof" className="w-full h-56 object-cover" />
-                </div>
-              </div>
-            )}
-
-            {/* Nodal Officer Approval Buttons — only visible to admin when not yet resolved */}
-            {user?.role === 'admin' && complaint.status !== 'resolved' && complaint.status !== 'closed' && (
-              <div className="mt-5 pt-4 border-t border-[var(--border)]">
-                <p className="text-sm font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#2EC4B6]" />
-                  Nodal Officer Decision
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => handleStatusUpdate('resolved', 'Resolution approved by Nodal Officer. Complaint resolved.')}
-                    disabled={updating}
-                    className="py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold text-sm hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
-                  >
-                    {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                    ✅ Approve & Resolve
-                  </button>
-                  <button
-                    onClick={() => {
-                      const reason = prompt('Reason for rejection:');
-                      if (reason) {
-                        handleStatusUpdate('in_progress', `Resolution rejected by Nodal Officer: ${reason}. Officer must resubmit.`);
-                      }
-                    }}
-                    disabled={updating}
-                    className="py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 font-semibold text-sm hover:bg-red-500/20 disabled:opacity-40 flex items-center justify-center gap-2"
-                  >
-                    {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertOctagon className="w-4 h-4" />}
-                    ❌ Reject
-                  </button>
-                </div>
-                <p className="text-xs text-[var(--text-dim)] mt-2">Approving will mark the complaint as resolved and notify the citizen</p>
-              </div>
-            )}
+        {/* ── Escalated ── */}
+        {complaint.status === 'escalated' && (
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-amber-400">Complaint Escalated</p>
+              <p className="text-xs text-amber-400/70 mt-0.5">This complaint has been escalated to higher authorities. Awaiting further instructions.</p>
+            </div>
           </div>
         )}
-      </motion.div>
-    </div>
+      </div>
+    )
+  }
+
+  {/* AI Verification Result */ }
+  {
+    (aiResult || complaint.resolution?.aiVerification?.score > 0) && (
+      <div className={`glass rounded-2xl p-6 border-2 ${(aiResult?.score || complaint.resolution?.aiVerification?.score) >= 70
+          ? 'border-emerald-500/30 bg-emerald-500/5'
+          : 'border-amber-500/30 bg-amber-500/5'
+        }`}>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+          🤖 AI Verification Result
+        </h2>
+        <div className="flex items-center gap-4 mb-3">
+          <div className="text-center">
+            <p className="text-3xl font-bold text-[var(--text-primary)]">
+              {aiResult?.score || complaint.resolution?.aiVerification?.score}%
+            </p>
+            <p className="text-xs text-[var(--text-muted)]">Confidence</p>
+          </div>
+          <div className="flex-1">
+            <div className="h-3 rounded-full bg-[var(--bg-card-hover)] overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-1000 ${(aiResult?.score || complaint.resolution?.aiVerification?.score) >= 70
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                    : 'bg-gradient-to-r from-amber-500 to-orange-500'
+                  }`}
+                style={{ width: `${aiResult?.score || complaint.resolution?.aiVerification?.score}%` }}
+              />
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+          {aiResult?.analysis || complaint.resolution?.aiVerification?.analysis}
+        </p>
+      </div>
+    )
+  }
+
+  {/* Resolution Report + Nodal Officer Approval Panel */ }
+  {
+    (complaint.resolution?.actionTaken || complaint.resolution?.photo) && (
+      <div className="glass rounded-2xl p-6 border-2 border-indigo-500/20">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1 flex items-center gap-2">
+          📋 Officer&apos;s Resolution Report
+        </h2>
+        <p className="text-xs text-[var(--text-dim)] mb-4">
+          {complaint.status === 'resolved' ? 'Approved by Nodal Officer' : 'Submitted by the Department Officer — pending Nodal Officer approval'}
+        </p>
+
+        {complaint.resolution.actionTaken && (
+          <div className="mb-4 p-3 rounded-lg bg-[var(--bg-card-hover)]">
+            <p className="text-xs font-semibold text-[var(--text-dim)] mb-1 uppercase tracking-wider">Action Taken</p>
+            <p className="text-sm text-[var(--text-primary)] leading-relaxed">{complaint.resolution.actionTaken}</p>
+          </div>
+        )}
+
+        {complaint.resolution.photo && (
+          <div className="mb-4">
+            <p className="text-xs font-semibold text-[var(--text-dim)] mb-2 uppercase tracking-wider">Resolution Photo</p>
+            <div className="rounded-xl overflow-hidden border border-[var(--border)] max-w-md">
+              <img src={complaint.resolution.photo} alt="Resolution proof" className="w-full h-56 object-cover" />
+            </div>
+          </div>
+        )}
+
+        {/* Nodal Officer Approval Buttons — only visible to admin when not yet resolved */}
+        {user?.role === 'admin' && complaint.status !== 'resolved' && complaint.status !== 'closed' && (
+          <div className="mt-5 pt-4 border-t border-[var(--border)]">
+            <p className="text-sm font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-[#2EC4B6]" />
+              Nodal Officer Decision
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleStatusUpdate('resolved', 'Resolution approved by Nodal Officer. Complaint resolved.')}
+                disabled={updating}
+                className="py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold text-sm hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                ✅ Approve & Resolve
+              </button>
+              <button
+                onClick={() => {
+                  const reason = prompt('Reason for rejection:');
+                  if (reason) {
+                    handleStatusUpdate('in_progress', `Resolution rejected by Nodal Officer: ${reason}. Officer must resubmit.`);
+                  }
+                }}
+                disabled={updating}
+                className="py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 font-semibold text-sm hover:bg-red-500/20 disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertOctagon className="w-4 h-4" />}
+                ❌ Reject
+              </button>
+            </div>
+            <p className="text-xs text-[var(--text-dim)] mt-2">Approving will mark the complaint as resolved and notify the citizen</p>
+          </div>
+        )}
+      </div>
+    )
+  }
+      </motion.div >
+    </div >
   );
 }

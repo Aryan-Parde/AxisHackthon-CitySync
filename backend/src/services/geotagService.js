@@ -1,14 +1,33 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const config = require('../config/env');
 
-let genAI;
-let model;
+const OPENROUTER_MODEL = 'google/gemini-2.5-pro'; // Fast multimodal model mapped via OpenRouter
 
-try {
-  genAI = new GoogleGenerativeAI(config.geminiApiKey);
-  model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-} catch (error) {
-  console.warn('⚠️ Gemini AI not configured for geotag extraction.');
+async function callOpenRouter(messages) {
+  if (!config.openRouterApiKey) {
+    throw new Error('OpenRouter API not configured.');
+  }
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${config.openRouterApiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'http://localhost:5000',
+      'X-Title': 'CitySync Geotag'
+    },
+    body: JSON.stringify({
+      model: OPENROUTER_MODEL,
+      messages: messages,
+      max_tokens: 1000
+    })
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`OpenRouter API error: ${response.status} - ${errorBody}`);
+  }
+
+  const json = await response.json();
+  return json.choices[0].message.content;
 }
 
 class GeotagService {
@@ -20,18 +39,15 @@ class GeotagService {
    * @returns {Object} { isGeotagged, latitude, longitude, city, address, timestamp, raw }
    */
   static async extractGeotag(imageBase64) {
-    if (!model || !imageBase64) {
-      return { isGeotagged: false, error: 'AI model not available or no image provided' };
+    if (!config.openRouterApiKey || !imageBase64) {
+      return { isGeotagged: false, error: 'OpenRouter API not configured or no image provided' };
     }
 
     try {
-      // Robust MIME type extraction
-      let mimeType = 'image/jpeg';
-      const match = imageBase64.match(/^data:(image\/\w+);base64,/);
-      if (match) {
-        mimeType = match[1];
+      let cleanBase64 = imageBase64;
+      if (!cleanBase64.startsWith('data:image')) {
+          cleanBase64 = `data:image/jpeg;base64,${cleanBase64}`;
       }
-      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
 
       const prompt = `Analyze this image carefully. Look for any geotagging information embedded as a text overlay, watermark, or stamp on the image. 
 These markings are typically added by "GPS Map Camera" apps. The text might be in banners at the bottom.
@@ -56,17 +72,13 @@ Return ONLY a valid JSON object. Do not include markdown formatting or comments.
 
 If no text overlay with location data is found, set "isGeotagged": false and the rest to null. Ensure latitude and longitude are numbers, not strings.`;
 
-      const result = await model.generateContent([
-        prompt,
-        {
-          inlineData: {
-            mimeType,
-            data: base64Data,
-          },
-        },
-      ]);
+      let content = [];
+      content.push({ type: 'text', text: prompt });
+      content.push({ type: 'image_url', image_url: { url: cleanBase64 } });
 
-      const responseText = result.response.text().trim();
+      const responseText = await callOpenRouter([{ role: 'user', content }]);
+
+      
       
       // Extract JSON from response
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);

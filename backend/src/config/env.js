@@ -10,6 +10,7 @@ module.exports = {
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   geminiApiKey: process.env.GOOGLE_GEMINI_API_KEY,
+  openRouterApiKey: process.env.OPENROUTER_API_KEY,
   mapboxToken: process.env.MAPBOX_ACCESS_TOKEN,
   otpExpiryMinutes: parseInt(process.env.OTP_EXPIRY_MINUTES) || 5,
   otpMaxAttempts: parseInt(process.env.OTP_MAX_ATTEMPTS) || 3,

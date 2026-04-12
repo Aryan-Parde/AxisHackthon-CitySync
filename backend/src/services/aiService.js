@@ -1,14 +1,34 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 const config = require('../config/env');
 
-let genAI;
-let model;
+const OPENROUTER_MODEL = 'google/gemini-2.5-flash-preview'; // Fast multimodal model via OpenRouter
 
-try {
-  genAI = new GoogleGenerativeAI(config.geminiApiKey);
-  model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-} catch (error) {
-  console.warn('⚠️ Gemini AI not configured. Using fallback classification.');
+// Helper for making OpenRouter calls
+async function callOpenRouter(messages, maxTokens = 1500) {
+  if (!config.openRouterApiKey) {
+    throw new Error('OpenRouter API not configured.');
+  }
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${config.openRouterApiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'http://localhost:5000', 
+      'X-Title': 'CitySync'
+    },
+    body: JSON.stringify({
+      model: OPENROUTER_MODEL,
+      messages: messages,
+      max_tokens: maxTokens
+    })
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`OpenRouter API error: ${response.status} - ${errorBody}`);
+  }
+
+  const json = await response.json();
+  return json.choices[0].message.content;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -19,54 +39,51 @@ const DEPARTMENTS = {
   'Garbage':                { dept: 'Solid Waste Management',                category: 'garbage' },
   'Water Leakage':          { dept: 'Public Health Engineering Department',  category: 'water_supply' },
   'Road Damage':            { dept: 'Public Work Department',               category: 'road_damage' },
-  'Electricity Issue':      { dept: 'Electrical Department',                category: 'streetlight' },
-  'Encroachment':           { dept: 'Encroachment Department',              category: 'illegal_construction' },
-  'Environment Issue':      { dept: 'Environment Department',               category: 'noise' },
+  'Electricity Issue':      { dept: 'Electrical Department',                category: 'electricity' },
+  'Encroachment':           { dept: 'Encroachment Department',              category: 'encroachment' },
+  'Environment Issue':      { dept: 'Environment Department',               category: 'pollution' },
   'Fire Hazard':            { dept: 'Fire Department',                      category: 'fire' },
   'Health Issue':           { dept: 'Health Department (Medicine)',          category: 'health' },
   'Transport Issue':        { dept: 'Transport Department',                 category: 'traffic' },
   // ── Revenue & Tax ──
   'Property Tax':           { dept: 'Revenue Department',                   category: 'tax' },
-  'LBT/Octroi':             { dept: 'LBT',                                  category: 'tax' },
+  'LBT/Octroi':            { dept: 'LBT',                                  category: 'tax' },
   'Audit Issue':            { dept: 'Revenue And Audit Department',         category: 'tax' },
-  // ── Parks & Gardens ──
+  // ── City amenities ──
   'Garden Issue':           { dept: 'Garden Department',                    category: 'garden' },
-  // ── Property & Land ──
   'Estate Issue':           { dept: 'Estate Department',                    category: 'estate' },
-  'Town Planning':          { dept: 'Town Planning Department',             category: 'town_planning' },
-  // ── Market & Trade ──
+  'Town Planning':          { dept: 'Town Planning Department',             category: 'planning' },
   'Market Issue':           { dept: 'Market Department',                    category: 'market' },
   'Signage Issue':          { dept: 'Skysign & Advertisement Department',   category: 'signage' },
-  // ── Social & Welfare ──
+  // ── Social services ──
   'Social Welfare':         { dept: 'Social Welfare Department',            category: 'welfare' },
   'Education Issue':        { dept: 'Education Department',                 category: 'education' },
   'Cultural Issue':         { dept: 'Cultural And Sports Department',       category: 'cultural' },
-  // ── Records & Admin ──
-  'Birth/Death Certificate':{ dept: 'Birth and Death Registration Department', category: 'records' },
+  // ── Admin / Records ──
+  'Birth/Death Certificate':{ dept: 'Birth and Death Registration Department', category: 'certificate' },
   'Records Request':        { dept: 'Central Records Department',           category: 'records' },
   'General Administration': { dept: 'General Administration Department',    category: 'general' },
-  // ── Finance & Law ──
   'Finance Issue':          { dept: 'Accounts and Finance Department',      category: 'finance' },
   'Legal Issue':            { dept: 'Law Department',                       category: 'legal' },
-  // ── Public Communication ──
   'Public Relations':       { dept: 'Public Relations Department',          category: 'pr' },
   'IT Issue':               { dept: 'Department Of Information And Technology', category: 'it' },
-  // ── Infrastructure & Machinery ──
-  'Road Construction':      { dept: 'Hot Mix Plant Department',             category: 'road_damage' },
+  // ── Works ──
+  'Road Construction':      { dept: 'Hot Mix Plant Department',             category: 'road_construction' },
   'Workshop/Vehicle':       { dept: 'Workshop Department',                  category: 'workshop' },
-  // ── Elections ──
   'Election Issue':         { dept: 'Election Department',                  category: 'election' },
+  // ── Catch-all ──
+  'Other':                  { dept: null,                                   category: 'other' },
 };
 
 // ═══════════════════════════════════════════════════════════════
-//  CANONICAL KEYWORD MAP (raw synonym → standard token)
+//  KEYWORD → CANONICAL CATEGORY  (for keyword normalization)
 // ═══════════════════════════════════════════════════════════════
 const CANONICAL = {
-  // Garbage / Solid Waste
-  trash:'garbage', waste:'garbage', litter:'garbage', dump:'garbage', rubbish:'garbage',
-  debris:'garbage', dustbin:'garbage', 'garbage bin':'garbage',
-  // Water / PHED
-  leak:'water', overflow:'water', 'pipe burst':'water', drainage:'water', sewage:'water',
+  // Garbage / SWM
+  trash:'garbage', rubbish:'garbage', waste:'garbage', litter:'garbage',
+  dump:'garbage', dustbin:'garbage', debris:'garbage', 'solid waste':'garbage',
+  // Water / PHE
+  leak:'water', pipe:'water', 'pipe burst':'water', overflow:'water', drainage:'water',
   sewer:'water', manhole:'water', gutter:'water', tap:'water', pipeline:'water',
   // Road / PWD
   crack:'pothole', 'broken road':'pothole', 'damaged street':'pothole', pit:'pothole',
@@ -133,7 +150,7 @@ class AIService {
   // ══════════════════════════════════════════════════
   static async classifyComplaint(text, imageBase64 = null) {
     try {
-      if (!model) {
+      if (!config.openRouterApiKey) {
         return this._fallback(text);
       }
 
@@ -144,19 +161,20 @@ class AIService {
       // ── Build a context-aware prompt ──
       const prompt = this._buildPrompt(hasText, hasImage, text);
 
-      // ── Build Gemini parts array ──
-      const parts = [{ text: prompt }];
+      // ── Build OpenRouter content array ──
+      let content = [];
+      content.push({ type: 'text', text: prompt });
 
       if (hasImage) {
-        const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
-        parts.push({
-          inlineData: { mimeType: 'image/jpeg', data: cleanBase64 }
-        });
+        let cleanBase64 = imageBase64;
+        if (!cleanBase64.startsWith('data:image')) {
+          cleanBase64 = `data:image/jpeg;base64,${cleanBase64}`;
+        }
+        content.push({ type: 'image_url', image_url: { url: cleanBase64 } });
       }
 
-      // ── Call Gemini ──
-      const result = await model.generateContent(parts);
-      const raw = result.response.text();
+      // ── Call OpenRouter ──
+      const raw = await callOpenRouter([{ role: 'user', content }]);
 
       // ── Extract JSON from response ──
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
@@ -329,7 +347,7 @@ OUTPUT: Respond with ONLY this JSON — nothing else:
   }
 
   // ══════════════════════════════════════════════════
-  //  OFFLINE FALLBACK (no Gemini / API failure)
+  //  OFFLINE FALLBACK (no AI / API failure)
   // ══════════════════════════════════════════════════
   static _fallback(text) {
     const lower = (text || '').toLowerCase();
@@ -404,19 +422,9 @@ OUTPUT: Respond with ONLY this JSON — nothing else:
   }
 
   // Generate embedding for text (for duplicate detection)
+  // OpenRouter does not expose embedding endpoints, so we use TF-IDF fallback
   static async generateEmbedding(text) {
-    try {
-      if (!genAI) {
-        return this.simpleTFIDF(text);
-      }
-
-      const embeddingModel = genAI.getGenerativeModel({ model: 'text-embedding-004' });
-      const result = await embeddingModel.embedContent(text);
-      return result.embedding.values;
-    } catch (error) {
-      console.error('Embedding error:', error.message);
-      return this.simpleTFIDF(text);
-    }
+    return this.simpleTFIDF(text);
   }
 
   // Simple TF-IDF fallback for embeddings
@@ -444,7 +452,7 @@ OUTPUT: Respond with ONLY this JSON — nothing else:
   // Generate PIL draft
   static async generatePILDraft(complaint, escalations) {
     try {
-      if (!model) {
+      if (!config.openRouterApiKey) {
         return this.fallbackPILDraft(complaint, escalations);
       }
 
@@ -465,9 +473,10 @@ ${escalations.map(e => `- Level ${e.fromLevel}→${e.toLevel}: ${e.reason} (${e.
 
 Generate a formal PIL draft addressing the municipal authorities. Include reference to relevant laws and citizen rights.`;
 
-      const result = await model.generateContent(prompt);
-      return result.response.text();
+      const result = await callOpenRouter([{ role: 'user', content: prompt }], 2000);
+      return result;
     } catch (error) {
+      console.error('PIL Draft error:', error.message);
       return this.fallbackPILDraft(complaint, escalations);
     }
   }
@@ -510,16 +519,14 @@ Place: ____________
     `.trim();
   }
 
-  // Compare complaint photo vs resolution photo using Gemini 2.0 Flash
+  // Compare complaint photo vs resolution photo using OpenRouter Vision
   static async comparePhotos(complaintPhotoBase64, resolutionPhotoBase64, description) {
     try {
-      if (!model) {
+      if (!config.openRouterApiKey) {
         return this.fallbackPhotoComparison();
       }
 
-      const parts = [
-        {
-          text: `You are a civic complaint verification AI. An officer claims to have resolved a complaint. Compare the BEFORE (complaint) photo and AFTER (resolution) photo.
+      const promptText = `You are a civic complaint verification AI. An officer claims to have resolved a complaint. Compare the BEFORE (complaint) photo and AFTER (resolution) photo.
 
 Complaint description: "${description}"
 
@@ -535,39 +542,35 @@ Return ONLY valid JSON (no markdown, no code blocks):
   "analysis": "One paragraph summary of your comparison",
   "beforeDescription": "What you see in the before photo",
   "afterDescription": "What you see in the after photo"
-}`
-        }
-      ];
+}`;
+
+      let content = [];
+      content.push({ type: 'text', text: promptText });
 
       // Add complaint photo if available
       if (complaintPhotoBase64) {
-        const cleanBase64 = complaintPhotoBase64.replace(/^data:image\/\w+;base64,/, '');
-        parts.push({
-          inlineData: {
-            mimeType: 'image/jpeg',
-            data: cleanBase64
-          }
-        });
-        parts.push({ text: 'BEFORE photo (complaint):' });
+        let cleanBefore = complaintPhotoBase64;
+        if (!cleanBefore.startsWith('data:image')) {
+          cleanBefore = `data:image/jpeg;base64,${cleanBefore}`;
+        }
+        content.push({ type: 'text', text: 'BEFORE photo (complaint):' });
+        content.push({ type: 'image_url', image_url: { url: cleanBefore } });
       }
 
       // Add resolution photo
       if (resolutionPhotoBase64) {
-        const cleanBase64 = resolutionPhotoBase64.replace(/^data:image\/\w+;base64,/, '');
-        parts.push({
-          inlineData: {
-            mimeType: 'image/jpeg',
-            data: cleanBase64
-          }
-        });
-        parts.push({ text: 'AFTER photo (resolution):' });
+        let cleanAfter = resolutionPhotoBase64;
+        if (!cleanAfter.startsWith('data:image')) {
+          cleanAfter = `data:image/jpeg;base64,${cleanAfter}`;
+        }
+        content.push({ type: 'text', text: 'AFTER photo (resolution):' });
+        content.push({ type: 'image_url', image_url: { url: cleanAfter } });
       }
 
-      const result = await model.generateContent(parts);
-      const response = result.response.text();
+      const responseText = await callOpenRouter([{ role: 'user', content }]);
 
-      let jsonStr = response;
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      let jsonStr = responseText;
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         jsonStr = jsonMatch[0];
       }

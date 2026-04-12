@@ -61,6 +61,8 @@ export const complaintsAPI = {
   resolve: (id, data) => api.put(`/complaints/${id}/resolve`, data),
   reassign: (id, data) => api.put(`/complaints/${id}/reassign`, data),
   upvote: (id) => api.post(`/complaints/${id}/upvote`),
+  validateGeotag: (image) => api.post('/complaints/validate-geotag', { image }),
+  getResolved: (params) => api.get('/complaints/resolved', { params }),
 };
 
 // Admin API

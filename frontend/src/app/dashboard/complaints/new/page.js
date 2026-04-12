@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { complaintsAPI } from '@/lib/api';
 import { motion } from 'framer-motion';
 import {
-  MapPin, Camera, Send, Loader2, Sparkles, X, ImagePlus
+  MapPin, Camera, Send, Loader2, Sparkles, X, ImagePlus, CheckCircle, AlertTriangle, Clock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import mapboxgl from 'mapbox-gl';
@@ -21,6 +21,8 @@ export default function NewComplaintPage() {
   const [loading, setLoading] = useState(false);
   const [aiResult, setAiResult] = useState(null);
   const [needsMoreInfo, setNeedsMoreInfo] = useState(false);
+  const [geotagData, setGeotagData] = useState(null);
+  const [geotagLoading, setGeotagLoading] = useState(false);
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);
@@ -50,13 +52,11 @@ export default function NewComplaintPage() {
       const { lng, lat } = e.lngLat;
       setLocation({ coordinates: [lng, lat] });
 
-      // Update marker
       if (markerRef.current) markerRef.current.remove();
       markerRef.current = new mapboxgl.Marker({ color: '#6366f1' })
         .setLngLat([lng, lat])
         .addTo(map);
 
-      // Reverse geocode
       try {
         const res = await fetch(
           `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}&country=IN`
@@ -75,19 +75,66 @@ export default function NewComplaintPage() {
     return () => map.remove();
   }, []);
 
-  const handleImageUpload = (e) => {
+  // When geotag data has lat/lng, auto-set the map pin
+  const applyGeotagLocation = (geotag) => {
+    if (!geotag?.latitude || !geotag?.longitude || !mapRef.current) return;
+    
+    const lng = geotag.longitude;
+    const lat = geotag.latitude;
+    
+    setLocation({ coordinates: [lng, lat] });
+    setAddress(geotag.address || geotag.city || '');
+
+    if (markerRef.current) markerRef.current.remove();
+    markerRef.current = new mapboxgl.Marker({ color: '#2EC4B6' })
+      .setLngLat([lng, lat])
+      .addTo(mapRef.current);
+
+    mapRef.current.flyTo({ center: [lng, lat], zoom: 16, duration: 1500 });
+  };
+
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
-    files.forEach((file) => {
+    
+    for (const file of files) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImages((prev) => [...prev, reader.result].slice(0, 3));
+      reader.onloadend = async () => {
+        const base64 = reader.result;
+        setImages((prev) => [...prev, base64].slice(0, 3));
+
+        // Validate geotag on first image
+        if (images.length === 0) {
+          setGeotagLoading(true);
+          setGeotagData(null);
+          try {
+            const res = await complaintsAPI.validateGeotag(base64);
+            const data = res.data.data;
+            setGeotagData(data);
+
+            if (data.isGeotagged) {
+              if (data.timestampValid) {
+                toast.success('📍 Geotagged photo detected! Location auto-pinned.');
+                applyGeotagLocation(data);
+              } else {
+                toast.error(data.timestampMessage || 'Photo is too old');
+              }
+            } else {
+              toast('⚠️ Photo is not geotagged. You can still pin location manually.', { icon: '📸' });
+            }
+          } catch (err) {
+            console.error('Geotag validation error:', err);
+          } finally {
+            setGeotagLoading(false);
+          }
+        }
       };
       reader.readAsDataURL(file);
-    });
+    }
   };
 
   const removeImage = (index) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
+    if (index === 0) setGeotagData(null);
   };
 
   const handleSubmit = async (e) => {
@@ -129,7 +176,6 @@ export default function NewComplaintPage() {
         ticketId: data.data.ticketId,
       });
 
-      // Redirect after short delay
       setTimeout(() => {
         router.push(`/dashboard/complaints/${data.data._id}`);
       }, 2000);
@@ -154,7 +200,7 @@ export default function NewComplaintPage() {
       >
         <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-1">Report an Issue</h1>
         <p className="text-sm text-[var(--text-muted)] mb-6">
-          Describe the problem and pin the location. AI will classify and route it automatically.
+          Upload a geotagged photo (GPS Map Camera app) for auto-pinning, or manually describe and pin the location.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -218,12 +264,15 @@ export default function NewComplaintPage() {
             />
           </div>
 
-          {/* Image Upload */}
+          {/* Image Upload with Geotag Validation */}
           <div className="glass rounded-2xl p-5">
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-3">
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
               <Camera className="w-4 h-4 inline mr-1" />
               Photos <span className="text-[var(--text-dim)]">(max 3)</span>
             </label>
+            <p className="text-xs text-[var(--text-dim)] mb-3">
+              📍 Use <strong>GPS Map Camera</strong> app for geotagged photos — location & time will be auto-extracted
+            </p>
             <div className="flex gap-3 flex-wrap">
               {images.map((img, i) => (
                 <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-[var(--border)]">
@@ -235,22 +284,83 @@ export default function NewComplaintPage() {
                   >
                     <X className="w-3 h-3 text-white" />
                   </button>
+                  {i === 0 && geotagData?.isGeotagged && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-emerald-500/90 text-white text-[10px] text-center py-0.5 font-medium">
+                      📍 Geotagged
+                    </div>
+                  )}
+                  {i === 0 && geotagData && !geotagData.isGeotagged && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-amber-500/90 text-white text-[10px] text-center py-0.5 font-medium">
+                      ⚠️ No geotag
+                    </div>
+                  )}
                 </div>
               ))}
               {images.length < 3 && (
                 <label className="w-24 h-24 rounded-xl border-2 border-dashed border-[var(--border)] flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-[#2EC4B6]/50 transition-colors">
-                  <ImagePlus className="w-5 h-5 text-[var(--text-dim)]" />
-                  <span className="text-xs text-[var(--text-dim)]">Add</span>
+                  {geotagLoading ? (
+                    <Loader2 className="w-5 h-5 text-[var(--text-dim)] animate-spin" />
+                  ) : (
+                    <ImagePlus className="w-5 h-5 text-[var(--text-dim)]" />
+                  )}
+                  <span className="text-xs text-[var(--text-dim)]">{geotagLoading ? 'Checking...' : 'Add'}</span>
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}
                     className="hidden"
                     multiple
+                    disabled={geotagLoading}
                   />
                 </label>
               )}
             </div>
+
+            {/* Geotag result display */}
+            {geotagData && (
+              <motion.div
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`mt-3 p-3 rounded-lg border ${
+                  geotagData.isGeotagged && geotagData.timestampValid
+                    ? 'bg-emerald-500/10 border-emerald-500/20'
+                    : geotagData.isGeotagged
+                    ? 'bg-amber-500/10 border-amber-500/20'
+                    : 'bg-red-500/10 border-red-500/20'
+                }`}
+              >
+                {geotagData.isGeotagged ? (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-400" />
+                      <span className="text-sm font-medium text-emerald-400">Geotag Detected</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <div className="text-xs text-[var(--text-muted)]">
+                        <span className="text-[var(--text-dim)]">Location:</span> {geotagData.city}, {geotagData.state}
+                      </div>
+                      <div className="text-xs text-[var(--text-muted)]">
+                        <span className="text-[var(--text-dim)]">Coords:</span> {geotagData.latitude?.toFixed(6)}, {geotagData.longitude?.toFixed(6)}
+                      </div>
+                      <div className="text-xs text-[var(--text-muted)]">
+                        <span className="text-[var(--text-dim)]">Time:</span> {geotagData.timestamp}
+                      </div>
+                      <div className={`text-xs font-medium ${geotagData.timestampValid ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {geotagData.timestampValid ? '✅ Within 24hrs' : `❌ ${geotagData.timestampMessage}`}
+                      </div>
+                    </div>
+                    {geotagData.address && (
+                      <p className="text-xs text-[var(--text-muted)] mt-1">📍 {geotagData.address}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-400" />
+                    <span className="text-sm text-amber-400">Not geotagged — pin location manually on the map below</span>
+                  </div>
+                )}
+              </motion.div>
+            )}
           </div>
 
           {/* Map Location */}
@@ -258,6 +368,9 @@ export default function NewComplaintPage() {
             <label className="block text-sm font-medium text-[var(--text-secondary)] mb-3">
               <MapPin className="w-4 h-4 inline mr-1" />
               Pin Location *
+              {geotagData?.isGeotagged && (
+                <span className="ml-2 text-xs text-emerald-400 font-normal">(auto-pinned from geotag)</span>
+              )}
             </label>
             <div
               ref={mapContainerRef}

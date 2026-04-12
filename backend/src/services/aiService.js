@@ -39,54 +39,51 @@ const DEPARTMENTS = {
   'Garbage':                { dept: 'Solid Waste Management',                category: 'garbage' },
   'Water Leakage':          { dept: 'Public Health Engineering Department',  category: 'water_supply' },
   'Road Damage':            { dept: 'Public Work Department',               category: 'road_damage' },
-  'Electricity Issue':      { dept: 'Electrical Department',                category: 'streetlight' },
-  'Encroachment':           { dept: 'Encroachment Department',              category: 'illegal_construction' },
-  'Environment Issue':      { dept: 'Environment Department',               category: 'noise' },
+  'Electricity Issue':      { dept: 'Electrical Department',                category: 'electricity' },
+  'Encroachment':           { dept: 'Encroachment Department',              category: 'encroachment' },
+  'Environment Issue':      { dept: 'Environment Department',               category: 'pollution' },
   'Fire Hazard':            { dept: 'Fire Department',                      category: 'fire' },
   'Health Issue':           { dept: 'Health Department (Medicine)',          category: 'health' },
   'Transport Issue':        { dept: 'Transport Department',                 category: 'traffic' },
   // ── Revenue & Tax ──
   'Property Tax':           { dept: 'Revenue Department',                   category: 'tax' },
-  'LBT/Octroi':             { dept: 'LBT',                                  category: 'tax' },
+  'LBT/Octroi':            { dept: 'LBT',                                  category: 'tax' },
   'Audit Issue':            { dept: 'Revenue And Audit Department',         category: 'tax' },
-  // ── Parks & Gardens ──
+  // ── City amenities ──
   'Garden Issue':           { dept: 'Garden Department',                    category: 'garden' },
-  // ── Property & Land ──
   'Estate Issue':           { dept: 'Estate Department',                    category: 'estate' },
-  'Town Planning':          { dept: 'Town Planning Department',             category: 'town_planning' },
-  // ── Market & Trade ──
+  'Town Planning':          { dept: 'Town Planning Department',             category: 'planning' },
   'Market Issue':           { dept: 'Market Department',                    category: 'market' },
   'Signage Issue':          { dept: 'Skysign & Advertisement Department',   category: 'signage' },
-  // ── Social & Welfare ──
+  // ── Social services ──
   'Social Welfare':         { dept: 'Social Welfare Department',            category: 'welfare' },
   'Education Issue':        { dept: 'Education Department',                 category: 'education' },
   'Cultural Issue':         { dept: 'Cultural And Sports Department',       category: 'cultural' },
-  // ── Records & Admin ──
-  'Birth/Death Certificate':{ dept: 'Birth and Death Registration Department', category: 'records' },
+  // ── Admin / Records ──
+  'Birth/Death Certificate':{ dept: 'Birth and Death Registration Department', category: 'certificate' },
   'Records Request':        { dept: 'Central Records Department',           category: 'records' },
   'General Administration': { dept: 'General Administration Department',    category: 'general' },
-  // ── Finance & Law ──
   'Finance Issue':          { dept: 'Accounts and Finance Department',      category: 'finance' },
   'Legal Issue':            { dept: 'Law Department',                       category: 'legal' },
-  // ── Public Communication ──
   'Public Relations':       { dept: 'Public Relations Department',          category: 'pr' },
   'IT Issue':               { dept: 'Department Of Information And Technology', category: 'it' },
-  // ── Infrastructure & Machinery ──
-  'Road Construction':      { dept: 'Hot Mix Plant Department',             category: 'road_damage' },
+  // ── Works ──
+  'Road Construction':      { dept: 'Hot Mix Plant Department',             category: 'road_construction' },
   'Workshop/Vehicle':       { dept: 'Workshop Department',                  category: 'workshop' },
-  // ── Elections ──
   'Election Issue':         { dept: 'Election Department',                  category: 'election' },
+  // ── Catch-all ──
+  'Other':                  { dept: null,                                   category: 'other' },
 };
 
 // ═══════════════════════════════════════════════════════════════
-//  CANONICAL KEYWORD MAP (raw synonym → standard token)
+//  KEYWORD → CANONICAL CATEGORY  (for keyword normalization)
 // ═══════════════════════════════════════════════════════════════
 const CANONICAL = {
-  // Garbage / Solid Waste
-  trash:'garbage', waste:'garbage', litter:'garbage', dump:'garbage', rubbish:'garbage',
-  debris:'garbage', dustbin:'garbage', 'garbage bin':'garbage',
-  // Water / PHED
-  leak:'water', overflow:'water', 'pipe burst':'water', drainage:'water', sewage:'water',
+  // Garbage / SWM
+  trash:'garbage', rubbish:'garbage', waste:'garbage', litter:'garbage',
+  dump:'garbage', dustbin:'garbage', debris:'garbage', 'solid waste':'garbage',
+  // Water / PHE
+  leak:'water', pipe:'water', 'pipe burst':'water', overflow:'water', drainage:'water',
   sewer:'water', manhole:'water', gutter:'water', tap:'water', pipeline:'water',
   // Road / PWD
   crack:'pothole', 'broken road':'pothole', 'damaged street':'pothole', pit:'pothole',
@@ -360,7 +357,7 @@ OUTPUT: Respond with ONLY this JSON — nothing else:
   }
 
   // ══════════════════════════════════════════════════
-  //  OFFLINE FALLBACK (no Gemini / API failure)
+  //  OFFLINE FALLBACK (no AI / API failure)
   // ══════════════════════════════════════════════════
   static _fallback(text) {
     const lower = (text || '').toLowerCase();
@@ -435,6 +432,7 @@ OUTPUT: Respond with ONLY this JSON — nothing else:
   }
 
   // Generate embedding for text (for duplicate detection)
+  // OpenRouter does not expose embedding endpoints, so we use TF-IDF fallback
   static async generateEmbedding(text) {
     // OpenRouter doesn't natively expose Gemini embeddings in the same way,
     // so we fall back to TF-IDF for duplicate search efficiency.
@@ -489,6 +487,7 @@ Generate a formal PIL draft addressing the municipal authorities. Include refere
 
       return await callOpenRouter([{ role: 'user', content: prompt }]);
     } catch (error) {
+      console.error('PIL Draft error:', error.message);
       return this.fallbackPILDraft(complaint, escalations);
     }
   }
@@ -582,8 +581,8 @@ Return ONLY valid JSON (no markdown, no code blocks):
 
       const response = await callOpenRouter([{ role: 'user', content }]);
 
-      let jsonStr = response;
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      let jsonStr = responseText;
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         jsonStr = jsonMatch[0];
       }

@@ -833,6 +833,7 @@ export default function ComplaintDetailPage({ params }) {
                   >
                     Cancel
                   </button>
+                  <p className="text-xs text-[var(--text-dim)] ml-8 mt-1">Nodal Officer will review and mark as resolved</p>
                 </div>
               </motion.div>
             )}
@@ -925,7 +926,110 @@ export default function ComplaintDetailPage({ params }) {
             )}
           </div>
         )}
-      </motion.div>
-    </div>
+      </div>
+    )
+  }
+
+  {/* AI Verification Result */ }
+  {
+    (aiResult || complaint.resolution?.aiVerification?.score > 0) && (
+      <div className={`glass rounded-2xl p-6 border-2 ${(aiResult?.score || complaint.resolution?.aiVerification?.score) >= 70
+          ? 'border-emerald-500/30 bg-emerald-500/5'
+          : 'border-amber-500/30 bg-amber-500/5'
+        }`}>
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+          🤖 AI Verification Result
+        </h2>
+        <div className="flex items-center gap-4 mb-3">
+          <div className="text-center">
+            <p className="text-3xl font-bold text-[var(--text-primary)]">
+              {aiResult?.score || complaint.resolution?.aiVerification?.score}%
+            </p>
+            <p className="text-xs text-[var(--text-muted)]">Confidence</p>
+          </div>
+          <div className="flex-1">
+            <div className="h-3 rounded-full bg-[var(--bg-card-hover)] overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-1000 ${(aiResult?.score || complaint.resolution?.aiVerification?.score) >= 70
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                    : 'bg-gradient-to-r from-amber-500 to-orange-500'
+                  }`}
+                style={{ width: `${aiResult?.score || complaint.resolution?.aiVerification?.score}%` }}
+              />
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+          {aiResult?.analysis || complaint.resolution?.aiVerification?.analysis}
+        </p>
+      </div>
+    )
+  }
+
+  {/* Resolution Report + Nodal Officer Approval Panel */ }
+  {
+    (complaint.resolution?.actionTaken || complaint.resolution?.photo) && (
+      <div className="glass rounded-2xl p-6 border-2 border-indigo-500/20">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1 flex items-center gap-2">
+          📋 Officer&apos;s Resolution Report
+        </h2>
+        <p className="text-xs text-[var(--text-dim)] mb-4">
+          {complaint.status === 'resolved' ? 'Approved by Nodal Officer' : 'Submitted by the Department Officer — pending Nodal Officer approval'}
+        </p>
+
+        {complaint.resolution.actionTaken && (
+          <div className="mb-4 p-3 rounded-lg bg-[var(--bg-card-hover)]">
+            <p className="text-xs font-semibold text-[var(--text-dim)] mb-1 uppercase tracking-wider">Action Taken</p>
+            <p className="text-sm text-[var(--text-primary)] leading-relaxed">{complaint.resolution.actionTaken}</p>
+          </div>
+        )}
+
+        {complaint.resolution.photo && (
+          <div className="mb-4">
+            <p className="text-xs font-semibold text-[var(--text-dim)] mb-2 uppercase tracking-wider">Resolution Photo</p>
+            <div className="rounded-xl overflow-hidden border border-[var(--border)] max-w-md">
+              <img src={complaint.resolution.photo} alt="Resolution proof" className="w-full h-56 object-cover" />
+            </div>
+          </div>
+        )}
+
+        {/* Nodal Officer Approval Buttons — only visible to admin when not yet resolved */}
+        {user?.role === 'admin' && complaint.status !== 'resolved' && complaint.status !== 'closed' && (
+          <div className="mt-5 pt-4 border-t border-[var(--border)]">
+            <p className="text-sm font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-[#2EC4B6]" />
+              Nodal Officer Decision
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleStatusUpdate('resolved', 'Resolution approved by Nodal Officer. Complaint resolved.')}
+                disabled={updating}
+                className="py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold text-sm hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                ✅ Approve & Resolve
+              </button>
+              <button
+                onClick={() => {
+                  const reason = prompt('Reason for rejection:');
+                  if (reason) {
+                    handleStatusUpdate('in_progress', `Resolution rejected by Nodal Officer: ${reason}. Officer must resubmit.`);
+                  }
+                }}
+                disabled={updating}
+                className="py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 font-semibold text-sm hover:bg-red-500/20 disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {updating ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertOctagon className="w-4 h-4" />}
+                ❌ Reject
+              </button>
+            </div>
+            <p className="text-xs text-[var(--text-dim)] mt-2">Approving will mark the complaint as resolved and notify the citizen</p>
+          </div>
+        )}
+      </div>
+    )
+  }
+      </motion.div >
+    </div >
   );
 }

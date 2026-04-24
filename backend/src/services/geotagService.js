@@ -1,26 +1,25 @@
 const config = require('../config/env');
 
-const OPENROUTER_MODEL = 'google/gemini-2.0-flash-001'; // Stable multimodal model via OpenRouter
+const GROQ_VISION_MODEL = 'llama-3.2-11b-vision-preview';
 
-async function callOpenRouter(messages) {
-  if (!config.openRouterApiKey) {
-    throw new Error('OpenRouter API not configured.');
+async function callGroq(messages) {
+  if (!config.groqApiKey) {
+    throw new Error('Groq API not configured.');
   }
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${config.openRouterApiKey}`,
+      'Authorization': `Bearer ${config.groqApiKey}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'http://localhost:5000',
-      'X-Title': 'CitySync Geotag'
     },
     body: JSON.stringify({
-      model: OPENROUTER_MODEL,
+      model: GROQ_VISION_MODEL,
       messages: messages,
-      max_tokens: 1000
+      max_tokens: 1000,
+      temperature: 0.2
     }),
     signal: controller.signal
   });
@@ -29,7 +28,7 @@ async function callOpenRouter(messages) {
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(`OpenRouter API error: ${response.status} - ${errorBody}`);
+    throw new Error(`Groq API error: ${response.status} - ${errorBody}`);
   }
 
   const json = await response.json();
@@ -45,8 +44,8 @@ class GeotagService {
    * @returns {Object} { isGeotagged, latitude, longitude, city, address, timestamp, raw }
    */
   static async extractGeotag(imageBase64) {
-    if (!config.openRouterApiKey || !imageBase64) {
-      return { isGeotagged: false, error: 'OpenRouter API not configured or no image provided' };
+    if (!config.groqApiKey || !imageBase64) {
+      return { isGeotagged: false, error: 'Groq API not configured or no image provided' };
     }
 
     try {
@@ -86,7 +85,7 @@ If no text overlay with location data is found, set "isGeotagged": false and the
       content.push({ type: 'text', text: prompt });
       content.push({ type: 'image_url', image_url: { url: cleanBase64 } });
 
-      const responseText = await callOpenRouter([{ role: 'user', content }]);
+      const responseText = await callGroq([{ role: 'user', content }]);
 
       
       

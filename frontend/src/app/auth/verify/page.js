@@ -141,9 +141,22 @@ function VerifyOTPContent() {
         {/* Verify Card */}
         <div className="glass rounded-2xl p-8">
           <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-1">Verify OTP</h2>
-          <p className="text-sm text-[var(--text-muted)] mb-8">
-            Enter the 6-digit code sent to <span className="text-[#2EC4B6] font-medium">{mobile}</span>
+          <p className="text-sm text-[var(--text-muted)] mb-4">
+            Enter the 6-digit code for <span className="text-[#2EC4B6] font-medium">{mobile}</span>
           </p>
+
+          {/* Server down notice */}
+          <div className="mb-6 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25">
+            <div className="flex items-start gap-2">
+              <span className="text-lg leading-none mt-0.5">⚠️</span>
+              <div>
+                <p className="text-sm font-semibold text-amber-600">SMS Service Temporarily Unavailable</p>
+                <p className="text-xs text-amber-600/80 mt-1">
+                  Free API limited access — enter <span className="font-bold text-amber-700 bg-amber-500/15 px-1.5 py-0.5 rounded text-sm">123456</span> as master OTP to continue.
+                </p>
+              </div>
+            </div>
+          </div>
 
           {/* OTP Inputs */}
           <div className="flex justify-center gap-3 mb-6" onPaste={handlePaste}>
@@ -192,10 +205,10 @@ function VerifyOTPContent() {
             )}
           </button>
 
-          {/* Demo hint */}
+          {/* Master OTP hint */}
           <div className="mt-4 p-3 rounded-lg bg-[#2EC4B6]/10 border border-[#2EC4B6]/20">
             <p className="text-xs text-[#2EC4B6] text-center font-medium">
-              💡 Demo: Check the backend console for the OTP, or use <span className="font-bold">123456</span> as master code
+              💡 Enter <span className="font-bold">123456</span> as master OTP (free API limited access)
             </p>
           </div>
         </div>

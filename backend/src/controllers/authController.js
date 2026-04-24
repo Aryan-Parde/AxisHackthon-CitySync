@@ -80,19 +80,24 @@ exports.sendOTP = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Invalid mobile number. Use 10-digit Indian number.' });
     }
 
-    // Check rate limit per mobile
-    const canSend = await OTPService.canSendOTP(mobile);
-    if (!canSend.allowed) {
-      return res.status(429).json({ success: false, message: canSend.message });
+    // Auto-create user profile if new number
+    let user = await User.findOne({ mobile });
+    if (!user) {
+      user = await User.create({
+        mobile,
+        isVerified: false,
+        role: 'citizen'
+      });
+      console.log(`📱 New citizen profile created for ${mobile}`);
     }
 
-    // Generate and store OTP
+    // Generate OTP record (Twilio SMS disabled — use master OTP 123456)
     const result = await OTPService.createOTP(mobile);
 
     res.status(200).json({
       success: true,
-      message: result.smsSent ? `OTP sent to ${mobile}` : `OTP generated for ${mobile} (check backend console)`,
-      data: { mobile, smsSent: result.smsSent }
+      message: `OTP generated for ${mobile}. SMS service temporarily unavailable — use master OTP 123456.`,
+      data: { mobile, smsSent: false, serverDown: true }
     });
   } catch (error) {
     next(error);

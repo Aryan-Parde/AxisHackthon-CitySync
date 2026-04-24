@@ -135,11 +135,19 @@ body {
 
 /* Float animation */
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.4; }
+  25% { transform: translateY(-15px) scale(1.05); opacity: 0.6; }
+  50% { transform: translateY(-8px) scale(0.98); opacity: 0.45; }
+  75% { transform: translateY(-18px) scale(1.03); opacity: 0.55; }
 }
 .animate-float {
   animation: float 3s ease-in-out infinite;
+}
+
+/* Pulse animation for background blobs */
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
 }
 
 /* Slide up animation */

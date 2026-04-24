@@ -1,27 +1,29 @@
 const config = require('../config/env');
 
-const OPENROUTER_MODEL = 'google/gemini-2.0-flash-001'; // Stable multimodal model via OpenRouter
+const GROQ_TEXT_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_VISION_MODEL = 'llama-3.2-11b-vision-preview';
 
-// Helper for making OpenRouter calls
-async function callOpenRouter(messages) {
-  if (!config.openRouterApiKey) {
-    throw new Error('OpenRouter API not configured.');
+// Helper for making Groq API calls
+async function callGroq(messages, useVision = false) {
+  if (!config.groqApiKey) {
+    throw new Error('Groq API not configured.');
   }
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const model = useVision ? GROQ_VISION_MODEL : GROQ_TEXT_MODEL;
+
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${config.openRouterApiKey}`,
+      'Authorization': `Bearer ${config.groqApiKey}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'http://localhost:5000', 
-      'X-Title': 'CitySync'
     },
     body: JSON.stringify({
-      model: OPENROUTER_MODEL,
+      model: model,
       messages: messages,
-      max_tokens: 1500
+      max_tokens: 1500,
+      temperature: 0.3
     }),
     signal: controller.signal
   });
@@ -30,7 +32,7 @@ async function callOpenRouter(messages) {
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(`OpenRouter API error: ${response.status} - ${errorBody}`);
+    throw new Error(`Groq API error: ${response.status} - ${errorBody}`);
   }
 
   const json = await response.json();
@@ -156,7 +158,7 @@ class AIService {
   // ══════════════════════════════════════════════════
   static async classifyComplaint(text, imageBase64 = null) {
     try {
-      if (!config.openRouterApiKey) {
+      if (!config.groqApiKey) {
         return this._fallback(text);
       }
 
@@ -167,7 +169,7 @@ class AIService {
       // ── Build a context-aware prompt ──
       const prompt = this._buildPrompt(hasText, hasImage, text);
 
-      // ── Build OpenRouter messages array ──
+      // ── Build Groq messages array ──
       let content = [];
       content.push({ type: 'text', text: prompt });
 
@@ -182,8 +184,8 @@ class AIService {
         });
       }
 
-      // ── Call OpenRouter ──
-      const raw = await callOpenRouter([{ role: 'user', content }]);
+      // ── Call Groq ──
+      const raw = await callGroq([{ role: 'user', content }], hasImage);
 
       // ── Extract JSON from response ──
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
@@ -438,9 +440,9 @@ OUTPUT: Respond with ONLY this JSON — nothing else:
   }
 
   // Generate embedding for text (for duplicate detection)
-  // OpenRouter does not expose embedding endpoints, so we use TF-IDF fallback
+  // Groq does not expose embedding endpoints, so we use TF-IDF fallback
   static async generateEmbedding(text) {
-    // OpenRouter doesn't natively expose Gemini embeddings in the same way,
+    // Groq doesn't natively expose embeddings,
     // so we fall back to TF-IDF for duplicate search efficiency.
     return this.simpleTFIDF(text);
   }
@@ -470,7 +472,7 @@ OUTPUT: Respond with ONLY this JSON — nothing else:
   // Generate PIL draft
   static async generatePILDraft(complaint, escalations) {
     try {
-      if (!config.openRouterApiKey) {
+      if (!config.groqApiKey) {
         return this.fallbackPILDraft(complaint, escalations);
       }
 
@@ -491,7 +493,7 @@ ${escalations.map(e => `- Level ${e.fromLevel}→${e.toLevel}: ${e.reason} (${e.
 
 Generate a formal PIL draft addressing the municipal authorities. Include reference to relevant laws and citizen rights.`;
 
-      return await callOpenRouter([{ role: 'user', content: prompt }]);
+      return await callGroq([{ role: 'user', content: prompt }]);
     } catch (error) {
       console.error('PIL Draft error:', error.message);
       return this.fallbackPILDraft(complaint, escalations);
@@ -539,7 +541,7 @@ Place: ____________
   // Compare complaint photo vs resolution photo using Multimodal AI
   static async comparePhotos(complaintPhotoBase64, resolutionPhotoBase64, description) {
     try {
-      if (!config.openRouterApiKey) {
+      if (!config.groqApiKey) {
         return this.fallbackPhotoComparison();
       }
 
@@ -585,7 +587,7 @@ Return ONLY valid JSON (no markdown, no code blocks):
         content.push({ type: 'image_url', image_url: { url: cleanBase64 } });
       }
 
-      const responseText = await callOpenRouter([{ role: 'user', content }]);
+      const responseText = await callGroq([{ role: 'user', content }], true);
 
       let jsonStr = responseText;
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);

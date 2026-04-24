@@ -1,11 +1,6 @@
 const bcrypt = require('bcryptjs');
 const OTP = require('../models/OTP');
 const config = require('../config/env');
-const twilio = require('twilio');
-
-const twilioClient = (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN)
-  ? twilio(process.env.TWILIO_ACCOUNT_SID.trim(), process.env.TWILIO_AUTH_TOKEN.trim())
-  : null;
 
 class OTPService {
   // Generate a 6-digit OTP
@@ -13,7 +8,7 @@ class OTPService {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
-  // Create and store OTP
+  // Create and store OTP (Twilio disabled — master OTP 123456 is active)
   static async createOTP(mobile) {
     // Invalidate any existing OTPs for this mobile
     await OTP.updateMany(
@@ -30,43 +25,15 @@ class OTPService {
       expiresAt: new Date(Date.now() + config.otpExpiryMinutes * 60 * 1000)
     });
 
-    let smsSent = false;
-
-    // Send via Twilio
-    if (twilioClient && process.env.TWILIO_PHONE_NUMBER) {
-      const fromNumber = process.env.TWILIO_PHONE_NUMBER.trim();
-      try {
-        const message = await twilioClient.messages.create({
-          body: `CitySync: Your OTP code is ${otp}. It expires in ${config.otpExpiryMinutes} minutes. Do not share this with anyone.`,
-          from: fromNumber,
-          to: mobile
-        });
-        smsSent = true;
-        console.log(`\n✅ SMS sent to ${mobile} via Twilio! SID: ${message.sid}`);
-      } catch (err) {
-        console.error(`\n❌ Twilio SMS failed for ${mobile}:`);
-        console.error(`   Error Code: ${err.code}`);
-        console.error(`   Message: ${err.message}`);
-        if (err.code === 21608 || err.code === 21211) {
-          console.error(`   ⚠️  This number is not verified in your Twilio trial account.`);
-          console.error(`   ➡️  Go to https://console.twilio.com/us1/develop/phone-numbers/manage/verified`);
-          console.error(`   ➡️  Add ${mobile} as a verified caller ID to receive SMS.\n`);
-        } else if (err.code === 21614) {
-          console.error(`   ⚠️  ${mobile} is not a valid mobile number or cannot receive SMS.\n`);
-        }
-      }
-    } else {
-      console.log('\n⚠️  Twilio not configured — SMS will not be sent.');
-    }
-
-    // Always log OTP to console
+    // Log OTP to console (no SMS — Twilio disabled)
     console.log(`\n📱 ========================================`);
     console.log(`   OTP for ${mobile}: ${otp}`);
-    console.log(`   SMS Sent: ${smsSent ? '✅ Yes' : '❌ No (use console OTP or 123456)'}`);
+    console.log(`   SMS: ❌ Disabled (free API limited access)`);
+    console.log(`   Master OTP: 123456`);
     console.log(`   Expires in ${config.otpExpiryMinutes} minutes`);
     console.log(`   ========================================\n`);
 
-    return { success: true, otpId: otpDoc._id, smsSent };
+    return { success: true, otpId: otpDoc._id, smsSent: false };
   }
 
   // Verify OTP

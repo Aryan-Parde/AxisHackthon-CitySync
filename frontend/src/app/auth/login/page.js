@@ -38,8 +38,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await authAPI.sendOTP(cleaned);
-      const smsSent = res.data?.data?.smsSent;
-      toast.success(smsSent ? 'OTP sent to your phone! 📲' : 'OTP generated — check backend console or use 123456');
+      const serverDown = res.data?.data?.serverDown;
+      toast.success(serverDown ? 'OTP ready — enter 123456 as master OTP (SMS unavailable)' : 'OTP sent to your phone! 📲');
       router.push(`/auth/verify?mobile=${encodeURIComponent('+91' + cleaned)}`);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to send OTP');

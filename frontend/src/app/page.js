@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { authAPI } from '@/lib/api';
-import { motion, useMotionValue, useTransform, useSpring, useInView, AnimatePresence } from 'framer-motion';
+import { motion, useInView } from 'framer-motion';
 import { MapPin, Shield, Zap, BarChart3, Users, Clock, ChevronRight, ArrowRight, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -65,30 +65,20 @@ const steps = [
   { step: '04', title: 'Track', desc: 'Real-time status updates & resolution', icon: '📊' },
 ];
 
-/* ─── Floating Particle Component ─── */
-function FloatingParticle({ delay, size, x, y, duration }) {
+/* ─── Floating Particle Component (lightweight) ─── */
+function FloatingParticle({ delay, size, x, y }) {
   return (
-    <motion.div
+    <div
       className="absolute rounded-full pointer-events-none"
       style={{
         width: size,
         height: size,
         left: `${x}%`,
         top: `${y}%`,
-        background: `radial-gradient(circle, rgba(46,196,182,0.25) 0%, rgba(144,219,244,0.12) 50%, transparent 70%)`,
+        background: `radial-gradient(circle, rgba(46,196,182,0.18) 0%, rgba(144,219,244,0.08) 50%, transparent 70%)`,
         filter: 'blur(1px)',
-      }}
-      animate={{
-        y: [0, -20, 0, 15, 0],
-        x: [0, 10, -8, 4, 0],
-        scale: [1, 1.15, 0.95, 1.08, 1],
-        opacity: [0.3, 0.6, 0.4, 0.65, 0.3],
-      }}
-      transition={{
-        duration: duration || 8,
-        repeat: Infinity,
-        delay: delay || 0,
-        ease: [0.45, 0, 0.55, 1],
+        animation: `float ${8 + delay}s ease-in-out infinite ${delay}s`,
+        opacity: 0.4,
       }}
     />
   );
@@ -127,71 +117,21 @@ function AnimatedCounter({ value, prefix = '', suffix = '', duration = 2 }) {
   );
 }
 
-/* ─── 3D Tilt Card ─── */
+/* ─── Tilt Card (simplified — no spring physics) ─── */
 function TiltCard({ children, className }) {
-  const ref = useRef(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-
-  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [6, -6]), { stiffness: 200, damping: 40 });
-  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-6, 6]), { stiffness: 200, damping: 40 });
-
-  const handleMouse = (e) => {
-    const rect = ref.current.getBoundingClientRect();
-    x.set((e.clientX - rect.left) / rect.width - 0.5);
-    y.set((e.clientY - rect.top) / rect.height - 0.5);
-  };
-
-  const handleLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
-
   return (
-    <motion.div
-      ref={ref}
-      onMouseMove={handleMouse}
-      onMouseLeave={handleLeave}
-      style={{ rotateX, rotateY, transformPerspective: 800 }}
-      className={className}
-    >
+    <div className={className} style={{ transition: 'transform 0.3s ease' }}>
       {children}
-    </motion.div>
+    </div>
   );
 }
 
-/* ─── Magnetic Button ─── */
+/* ─── Magnetic Button (simplified) ─── */
 function MagneticButton({ children, className, href }) {
-  const ref = useRef(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const springX = useSpring(x, { stiffness: 150, damping: 25 });
-  const springY = useSpring(y, { stiffness: 150, damping: 25 });
-
-  const handleMouse = (e) => {
-    const rect = ref.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    x.set((e.clientX - centerX) * 0.12);
-    y.set((e.clientY - centerY) * 0.12);
-  };
-
-  const handleLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
-
   return (
-    <motion.div
-      ref={ref}
-      onMouseMove={handleMouse}
-      onMouseLeave={handleLeave}
-      style={{ x: springX, y: springY }}
-    >
-      <Link href={href} className={className}>
-        {children}
-      </Link>
-    </motion.div>
+    <Link href={href} className={className}>
+      {children}
+    </Link>
   );
 }
 
@@ -249,15 +189,19 @@ export default function LandingPage() {
     ? indianCities.filter(c => c.toLowerCase().startsWith(citySearch.toLowerCase())).slice(0, 6)
     : [];
 
-  // Cursor-tracking gradient
+  // Cursor-tracking gradient — throttled for performance
+  const lastMouseUpdate = useRef(0);
   const handleGlobalMouse = useCallback((e) => {
+    const now = Date.now();
+    if (now - lastMouseUpdate.current < 50) return; // throttle to 20fps
+    lastMouseUpdate.current = now;
     const x = e.clientX / window.innerWidth;
     const y = e.clientY / window.innerHeight;
     setMousePos({ x, y });
   }, []);
 
   useEffect(() => {
-    window.addEventListener('mousemove', handleGlobalMouse);
+    window.addEventListener('mousemove', handleGlobalMouse, { passive: true });
     return () => window.removeEventListener('mousemove', handleGlobalMouse);
   }, [handleGlobalMouse]);
 
@@ -274,23 +218,6 @@ export default function LandingPage() {
 
 
 
-  /* ─── Text animation variants ─── */
-  const letterVariants = {
-    hidden: { opacity: 0, y: 40, rotateX: -60 },
-    visible: (i) => ({
-      opacity: 1,
-      y: 0,
-      rotateX: 0,
-      transition: {
-        delay: i * 0.035,
-        duration: 0.8,
-        ease: [0.22, 1, 0.36, 1],
-      },
-    }),
-  };
-
-  const title1 = 'Your City,';
-  const title2 = 'Your Voice';
 
   return (
     <div className="min-h-screen" style={gradientStyle}>
@@ -357,58 +284,34 @@ export default function LandingPage() {
         <AnimatedGrid />
 
         {/* Floating particles */}
-        <FloatingParticle delay={0} size={180} x={10} y={20} duration={7} />
-        <FloatingParticle delay={1.5} size={120} x={80} y={15} duration={5} />
-        <FloatingParticle delay={3} size={200} x={50} y={60} duration={8} />
-        <FloatingParticle delay={0.8} size={80} x={25} y={70} duration={6} />
-        <FloatingParticle delay={2.2} size={140} x={70} y={50} duration={9} />
-        <FloatingParticle delay={4} size={100} x={90} y={80} duration={7.5} />
-        <FloatingParticle delay={1} size={60} x={40} y={10} duration={5.5} />
+        <FloatingParticle delay={0} size={180} x={10} y={20} />
+        <FloatingParticle delay={2} size={140} x={75} y={50} />
+        <FloatingParticle delay={4} size={100} x={50} y={70} />
 
-        {/* Cursor-following glow orb */}
-        <motion.div
+        {/* Cursor-following glow orb (CSS transition only — no JS animation) */}
+        <div
           className="fixed pointer-events-none z-40"
           style={{
-            width: 400,
-            height: 400,
+            width: 350,
+            height: 350,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(46,196,182,0.06) 0%, rgba(144,219,244,0.03) 40%, transparent 70%)',
-            left: `calc(${mousePos.x * 100}% - 200px)`,
-            top: `calc(${mousePos.y * 100}% - 200px)`,
-            transition: 'left 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), top 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+            background: 'radial-gradient(circle, rgba(46,196,182,0.05) 0%, rgba(144,219,244,0.02) 40%, transparent 70%)',
+            left: `calc(${mousePos.x * 100}% - 175px)`,
+            top: `calc(${mousePos.y * 100}% - 175px)`,
+            transition: 'left 0.5s ease-out, top 0.5s ease-out',
+            willChange: 'left, top',
           }}
         />
 
-        {/* Background blobs - enhanced with animation */}
+        {/* Background blobs — CSS-only for performance */}
         <div className="absolute inset-0 overflow-hidden">
-          <motion.div
-            className="absolute w-96 h-96 bg-[#2EC4B6]/12 rounded-full blur-3xl"
-            animate={{
-              x: [0, 40, -20, 0],
-              y: [0, -25, 15, 0],
-              scale: [1, 1.15, 0.97, 1],
-            }}
-            transition={{ duration: 16, repeat: Infinity, ease: [0.45, 0, 0.55, 1] }}
-            style={{ top: '20%', left: '20%' }}
+          <div
+            className="absolute w-96 h-96 bg-[#2EC4B6]/10 rounded-full blur-3xl"
+            style={{ top: '20%', left: '20%', animation: 'pulse 16s ease-in-out infinite' }}
           />
-          <motion.div
-            className="absolute w-96 h-96 bg-[#90DBF4]/15 rounded-full blur-3xl"
-            animate={{
-              x: [0, -30, 25, 0],
-              y: [0, 30, -15, 0],
-              scale: [1, 0.93, 1.1, 1],
-            }}
-            transition={{ duration: 20, repeat: Infinity, ease: [0.45, 0, 0.55, 1] }}
-            style={{ bottom: '20%', right: '20%' }}
-          />
-          <motion.div
-            className="absolute w-[600px] h-[600px] bg-[#FFBF69]/8 rounded-full blur-3xl"
-            animate={{
-              scale: [1, 1.08, 0.96, 1],
-              rotate: [0, 8, -4, 0],
-            }}
-            transition={{ duration: 24, repeat: Infinity, ease: [0.45, 0, 0.55, 1] }}
-            style={{ top: '30%', left: '40%' }}
+          <div
+            className="absolute w-96 h-96 bg-[#90DBF4]/12 rounded-full blur-3xl"
+            style={{ bottom: '20%', right: '20%', animation: 'pulse 20s ease-in-out infinite 3s' }}
           />
         </div>
 
@@ -430,40 +333,15 @@ export default function LandingPage() {
             </motion.div>
           </motion.div>
 
-          {/* Animated Title - letter-by-letter */}
+          {/* Animated Title — word-level animation (faster than letter-by-letter) */}
           <motion.h1
             className="text-5xl sm:text-6xl lg:text-7xl font-black mb-6 leading-tight cursor-default drop-shadow-sm"
-            initial="hidden"
-            animate="visible"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className="block" style={{ perspective: '500px' }}>
-              {title1.split('').map((char, i) => (
-                <motion.span
-                  key={`t1-${i}`}
-                  custom={i}
-                  variants={letterVariants}
-                  className="inline-block gradient-text"
-                  whileHover={{ scale: 1.2, color: '#2EC4B6', transition: { duration: 0.2 } }}
-                  style={{ display: 'inline-block' }}
-                >
-                  {char === ' ' ? '\u00A0' : char}
-                </motion.span>
-              ))}
-            </span>
-            <span className="block mt-2" style={{ perspective: '500px' }}>
-              {title2.split('').map((char, i) => (
-                <motion.span
-                  key={`t2-${i}`}
-                  custom={i + title1.length}
-                  variants={letterVariants}
-                  className="inline-block gradient-text"
-                  whileHover={{ scale: 1.2, transition: { duration: 0.2 } }}
-                  style={{ display: 'inline-block' }}
-                >
-                  {char === ' ' ? '\u00A0' : char}
-                </motion.span>
-              ))}
-            </span>
+            <span className="block gradient-text">Your City,</span>
+            <span className="block gradient-text mt-2">Your Voice</span>
           </motion.h1>
 
           {/* Subtitle with stagger */}
@@ -766,41 +644,14 @@ export default function LandingPage() {
             transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
             className="relative group"
           >
-            {/* Ambient pulsing glow behind card */}
-            <motion.div
+            {/* Ambient glow behind card — CSS only */}
+            <div
               className="absolute -inset-4 rounded-[2rem] pointer-events-none"
               style={{
-                background: 'radial-gradient(ellipse at 30% 50%, rgba(46,196,182,0.15) 0%, transparent 60%), radial-gradient(ellipse at 70% 50%, rgba(144,219,244,0.12) 0%, transparent 60%)',
+                background: 'radial-gradient(ellipse at 30% 50%, rgba(46,196,182,0.12) 0%, transparent 60%), radial-gradient(ellipse at 70% 50%, rgba(144,219,244,0.10) 0%, transparent 60%)',
+                animation: 'pulse 4s ease-in-out infinite',
               }}
-              animate={{ opacity: [0.5, 0.9, 0.5], scale: [0.98, 1.02, 0.98] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
             />
-
-            {/* Orbiting glow dots */}
-            {[0, 1, 2].map((dotIdx) => (
-              <motion.div
-                key={dotIdx}
-                className="absolute w-3 h-3 rounded-full pointer-events-none"
-                style={{
-                  background: dotIdx === 0 ? '#2EC4B6' : dotIdx === 1 ? '#90DBF4' : '#FFBF69',
-                  boxShadow: `0 0 12px ${dotIdx === 0 ? 'rgba(46,196,182,0.6)' : dotIdx === 1 ? 'rgba(144,219,244,0.6)' : 'rgba(255,191,105,0.6)'}`,
-                  top: '50%',
-                  left: '50%',
-                }}
-                animate={{
-                  x: [0, 250, 250, -250, -250, 0],
-                  y: [dotIdx === 0 ? -200 : dotIdx === 1 ? 200 : -200, dotIdx === 0 ? -50 : dotIdx === 1 ? 50 : -50, dotIdx === 0 ? 200 : dotIdx === 1 ? -200 : 200, dotIdx === 0 ? 50 : dotIdx === 1 ? -50 : 50, dotIdx === 0 ? -200 : dotIdx === 1 ? 200 : -200, dotIdx === 0 ? -200 : dotIdx === 1 ? 200 : -200],
-                  opacity: [0.6, 0.9, 0.6, 0.9, 0.6, 0.6],
-                  scale: [1, 1.3, 1, 1.3, 1, 1],
-                }}
-                transition={{
-                  duration: 10,
-                  repeat: Infinity,
-                  delay: dotIdx * 3.3,
-                  ease: [0.45, 0, 0.55, 1],
-                }}
-              />
-            ))}
 
             <div className="relative rounded-3xl p-12 bg-gradient-to-br from-[#2EC4B6]/10 via-[#F6FFFB] to-[#90DBF4]/15 border border-[#2EC4B6]/20 shadow-2xl shadow-[#2EC4B6]/10 overflow-hidden">
               {/* Shimmer overlay */}

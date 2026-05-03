@@ -10,9 +10,11 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
+    setMounted(true);
     checkAuth();
   }, []);
 
@@ -65,8 +67,8 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={{
       user,
       token,
-      loading,
-      isAuthenticated: !!user && !!token,
+      loading: !mounted || loading,
+      isAuthenticated: mounted && !!user && !!token,
       login,
       logout,
       updateUser,

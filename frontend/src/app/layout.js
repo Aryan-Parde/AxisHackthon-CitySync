@@ -26,7 +26,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full flex flex-col bg-[var(--bg-darker)] text-[var(--text-primary)] font-[Inter,system-ui,sans-serif] antialiased">
+      <body className="min-h-full flex flex-col bg-[var(--bg-darker)] text-[var(--text-primary)] font-[Inter,system-ui,sans-serif] antialiased" suppressHydrationWarning>
         <AuthProvider>
           {children}
           <WhatsAppButton />

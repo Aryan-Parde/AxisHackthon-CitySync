@@ -7,7 +7,7 @@ import { complaintsAPI } from '@/lib/api';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, MapPin, Clock, ThumbsUp, Users, AlertTriangle,
-  CheckCircle, Loader2, ChevronRight, AlertOctagon, Camera, FileText, ShieldCheck, Gavel, ImagePlus
+  CheckCircle, Loader2, ChevronRight, AlertOctagon, Camera, FileText, ShieldCheck, Gavel, ImagePlus, Sparkles
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 

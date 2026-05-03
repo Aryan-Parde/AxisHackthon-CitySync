@@ -168,6 +168,7 @@ export default function LandingPage() {
   const [selectedCity, setSelectedCity] = useState('');
   const [citySearch, setCitySearch] = useState('');
   const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const heroRef = useRef(null);
 
   const indianCities = [
@@ -201,12 +202,13 @@ export default function LandingPage() {
   }, []);
 
   useEffect(() => {
+    setMounted(true);
     window.addEventListener('mousemove', handleGlobalMouse, { passive: true });
     return () => window.removeEventListener('mousemove', handleGlobalMouse);
   }, [handleGlobalMouse]);
 
-  // Dynamic gradient based on cursor
-  const gradientStyle = {
+  // Static gradient for SSR, dynamic on client
+  const gradientStyle = mounted ? {
     background: `
       radial-gradient(ellipse 80% 60% at ${mousePos.x * 100}% ${mousePos.y * 100}%, rgba(46,196,182,0.10) 0%, transparent 50%),
       radial-gradient(ellipse 60% 80% at ${(1 - mousePos.x) * 100}% ${(1 - mousePos.y) * 100}%, rgba(144,219,244,0.08) 0%, transparent 50%),
@@ -214,13 +216,15 @@ export default function LandingPage() {
       var(--bg-darker)
     `,
     transition: 'background 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+  } : {
+    background: 'var(--bg-darker)',
   };
 
 
 
 
   return (
-    <div className="min-h-screen" style={gradientStyle}>
+    <div className="min-h-screen" style={gradientStyle} suppressHydrationWarning>
       {/* ─── Navbar ─── */}
       <motion.nav
         initial={{ y: -80, opacity: 0 }}
@@ -289,19 +293,21 @@ export default function LandingPage() {
         <FloatingParticle delay={4} size={100} x={50} y={70} />
 
         {/* Cursor-following glow orb (CSS transition only — no JS animation) */}
-        <div
-          className="fixed pointer-events-none z-40"
-          style={{
-            width: 350,
-            height: 350,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(46,196,182,0.05) 0%, rgba(144,219,244,0.02) 40%, transparent 70%)',
-            left: `calc(${mousePos.x * 100}% - 175px)`,
-            top: `calc(${mousePos.y * 100}% - 175px)`,
-            transition: 'left 0.5s ease-out, top 0.5s ease-out',
-            willChange: 'left, top',
-          }}
-        />
+        {mounted && (
+          <div
+            className="fixed pointer-events-none z-40"
+            style={{
+              width: 350,
+              height: 350,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(46,196,182,0.05) 0%, rgba(144,219,244,0.02) 40%, transparent 70%)',
+              left: `calc(${mousePos.x * 100}% - 175px)`,
+              top: `calc(${mousePos.y * 100}% - 175px)`,
+              transition: 'left 0.5s ease-out, top 0.5s ease-out',
+              willChange: 'left, top',
+            }}
+          />
+        )}
 
         {/* Background blobs — CSS-only for performance */}
         <div className="absolute inset-0 overflow-hidden">
@@ -378,6 +384,7 @@ export default function LandingPage() {
                   onBlur={() => setTimeout(() => setShowCitySuggestions(false), 200)}
                   placeholder="Type your city name..."
                   className="flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-dim)]"
+                  suppressHydrationWarning
                 />
                 {selectedCity && (
                   <span className="text-xs px-2 py-0.5 rounded-full bg-[#2EC4B6]/10 text-[#2EC4B6] font-medium">✓</span>

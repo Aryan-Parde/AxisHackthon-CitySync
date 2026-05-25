@@ -144,5 +144,58 @@ Level 0: Ward Officer (24h) → Level 1: Zone Manager (48h)
 ```
 
 ---
+CitySync follows a modern full-stack architecture designed for scalability, real-time processing, and intelligent decision-making.
 
+Frontend Layer
+Built using Next.js 15 and React
+Provides citizen dashboard, complaint submission portal, live map visualizations, and admin analytics
+
+Backend Layer
+Powered by Node.js and Express.js
+Handles authentication, complaint processing, routing logic, escalation workflows, and API orchestration
+
+AI Processing Layer
+Google Gemini classifies complaint categories
+Duplicate detection engine identifies overlapping complaints
+Priority scoring engine ranks issues based on urgency and impact
+Automated authority routing ensures complaints reach the relevant department
+
+Data Layer
+MongoDB with geospatial indexing for location-based queries
+Stores complaints, users, escalation states, and analytics data
+
+Visualization Layer
+Mapbox for interactive maps and hotspot analysis
+Recharts for analytical dashboards and department performance insights
+
+
+--------
+
+Innovation Highlights
+
+AI-Powered Complaint Routing
+Automatically classifies and routes complaints to the correct civic authority.
+Smart Duplicate Detection
+Reduces redundancy by merging complaints using geospatial and semantic similarity analysis.
+Dynamic Priority Scoring
+Evaluates complaints based on severity, recurrence, frequency, and temporal urgency.
+Automated Escalation Workflow
+Escalates unresolved complaints through multiple administrative levels.
+PIL Draft Generation
+Generates structured escalation documentation for unresolved civic issues.
+Real-Time Civic Hotspot Intelligence
+Identifies issue-dense regions through heatmap-based analytics.
+
+---------
+Future Scope
+
+CitySync can be further enhanced through:
+Multilingual complaint submission support
+Voice-based issue reporting
+Integration with municipal corporation APIs
+Predictive issue forecasting using historical complaint data
+Mobile app deployment for Android and iOS
+AI-powered recommendation engine for preventive civic maintenance
+
+---------
 Built for **Axis Hackathon 2026** 🏆

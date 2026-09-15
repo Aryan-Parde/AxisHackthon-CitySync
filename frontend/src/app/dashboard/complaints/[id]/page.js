@@ -532,10 +532,6 @@ export default function ComplaintDetailPage({ params }) {
                   }
                   setResolving(true);
                   try {
-                    await complaintsAPI.resolve(id, {
-                      resolutionPhoto,
-                      actionTaken: actionTaken || 'Complaint verified at site. Issue confirmed.'
-                    });
                     await handleStatusUpdate('under_review', actionTaken || 'Site visit completed. Complaint verified by officer.');
                     toast.success('Complaint verified! Status updated.');
                   } catch (err) {
@@ -562,11 +558,7 @@ export default function ComplaintDetailPage({ params }) {
                   }
                   setResolving(true);
                   try {
-                    await complaintsAPI.resolve(id, {
-                      resolutionPhoto,
-                      actionTaken: `FAKE: ${actionTaken}`
-                    });
-                    await handleStatusUpdate('fake', actionTaken);
+                    await handleStatusUpdate('fake', `FAKE: ${actionTaken}`);
                     toast.success('Complaint marked as fake');
                   } catch (err) {
                     toast.error('Failed to update');

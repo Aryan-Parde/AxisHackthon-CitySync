@@ -137,7 +137,7 @@ export default function PublicMapPage() {
   return (
     <div className="h-screen bg-[var(--bg-darker)] flex flex-col">
       {/* Top bar */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[var(--border)] px-4 lg:px-6 py-3 flex items-center gap-4">
+      <header className="sticky top-0 z-30 bg-[var(--bg-card)]/95 backdrop-blur-md border-b border-[var(--border)] px-4 lg:px-6 py-3 flex items-center gap-4">
         <Link href="/" className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm">Home</span>
@@ -176,7 +176,7 @@ export default function PublicMapPage() {
       </header>
 
       {/* Legend */}
-      <div className="px-4 lg:px-6 py-2 flex flex-wrap gap-4 text-xs bg-white border-b border-[var(--border)]">
+      <div className="px-4 lg:px-6 py-2 flex flex-wrap gap-4 text-xs bg-[var(--bg-card)] border-b border-[var(--border)]">
         {Object.entries(priorityMarkerColors).map(([key, color]) => (
           <div key={key} className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />

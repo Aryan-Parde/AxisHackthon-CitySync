@@ -39,17 +39,51 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (user) fetchData();
+  }, [user]);
 
   const fetchData = async () => {
     try {
-      const [statsRes, complaintsRes] = await Promise.all([
-        adminAPI.getDashboard(),
-        complaintsAPI.getMyComplaints({ limit: 5 })
-      ]);
-      setStats(statsRes.data.data);
-      setComplaints(complaintsRes.data.data);
+      if (user?.role === 'citizen') {
+        // Citizens see only their own stats
+        const complaintsRes = await complaintsAPI.getMyComplaints({ limit: 200 });
+        const allComplaints = complaintsRes.data.data || [];
+        const total = allComplaints.length;
+        const resolved = allComplaints.filter(c => c.status === 'resolved' || c.status === 'closed').length;
+        const pending = allComplaints.filter(c => c.status === 'submitted' || c.status === 'under_review').length;
+        const inProgress = allComplaints.filter(c => c.status === 'in_progress').length;
+        const escalated = allComplaints.filter(c => c.status === 'escalated').length;
+
+        // Build category breakdown from user's own complaints
+        const catMap = {};
+        allComplaints.forEach(c => {
+          catMap[c.category] = (catMap[c.category] || 0) + 1;
+        });
+        const categoryBreakdown = Object.entries(catMap)
+          .map(([_id, count]) => ({ _id, count }))
+          .sort((a, b) => b.count - a.count);
+
+        setStats({
+          overview: {
+            total,
+            resolved,
+            pending,
+            inProgress,
+            escalated,
+            resolutionRate: total > 0 ? Math.round((resolved / total) * 100) : 0
+          },
+          categoryBreakdown
+        });
+        setComplaints(allComplaints.slice(0, 5));
+      } else {
+        // Admin/Authority see global stats
+        const [statsRes, complaintsRes] = await Promise.all([
+          adminAPI.getDashboard(),
+          complaintsAPI.getMyComplaints({ limit: 5 })
+        ]);
+        setStats(statsRes.data.data);
+        setComplaints(complaintsRes.data.data);
+      }
     } catch (error) {
       console.error('Dashboard fetch error:', error);
     } finally {
@@ -77,11 +111,11 @@ export default function DashboardPage() {
 
   const statCards = [
     {
-      label: 'Total Complaints',
+      label: user?.role === 'citizen' ? 'My Complaints' : 'Total Complaints',
       value: overview.total || 0,
       icon: FileText,
       gradient: 'from-[#2EC4B6] to-[#90DBF4]',
-      change: '+12%'
+      change: null
     },
     {
       label: 'Resolved',

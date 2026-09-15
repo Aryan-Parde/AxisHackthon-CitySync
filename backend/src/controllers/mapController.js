@@ -85,7 +85,7 @@ exports.getHeatmapData = async (req, res, next) => {
           coordinates: c.location.coordinates
         },
         properties: {
-          intensity: (c.priority.score / 100) * c.duplicateCount
+          intensity: Math.max(0.1, ((c.priority?.score || 10) / 100) * (c.duplicateCount || 1))
         }
       }))
     };

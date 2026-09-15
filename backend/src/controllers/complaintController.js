@@ -147,7 +147,9 @@ exports.createComplaint = async (req, res, next) => {
 // @access  Private
 exports.getMyComplaints = async (req, res, next) => {
   try {
-    const { status, category, page = 1, limit = 10 } = req.query;
+    const { status, category } = req.query;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 10));
 
     const query = { citizen: req.user._id };
     if (status) query.status = status;
@@ -157,7 +159,7 @@ exports.getMyComplaints = async (req, res, next) => {
       .populate('department', 'name code icon')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(parseInt(limit));
+      .limit(limit);
 
     const total = await Complaint.countDocuments(query);
 
@@ -166,7 +168,7 @@ exports.getMyComplaints = async (req, res, next) => {
       data: complaints,
       pagination: {
         total,
-        page: parseInt(page),
+        page,
         pages: Math.ceil(total / limit)
       }
     });

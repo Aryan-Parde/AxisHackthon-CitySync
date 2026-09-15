@@ -333,6 +333,53 @@ OUTPUT: Respond with ONLY this JSON — nothing else:
   }
 
   // ══════════════════════════════════════════════════
+  //  VALID COMPLAINT MODEL CATEGORIES
+  //  Maps extended AI categories → Mongoose enum values
+  // ══════════════════════════════════════════════════
+  static VALID_CATEGORIES = {
+    // Direct matches (already in Complaint model enum)
+    'pothole': 'pothole', 'garbage': 'garbage', 'streetlight': 'streetlight',
+    'water_supply': 'water_supply', 'sewage': 'sewage', 'road_damage': 'road_damage',
+    'noise': 'noise', 'illegal_construction': 'illegal_construction',
+    'traffic': 'traffic', 'drainage': 'drainage', 'other': 'other',
+    // Extended AI categories → closest valid enum value
+    'electricity': 'streetlight',       // Electrical → streetlight (closest infra)
+    'water': 'water_supply',            // Water leakage → water_supply
+    'pollution': 'noise',               // Environment → noise (closest match)
+    'fire': 'other',                    // Fire → other
+    'health': 'other',                  // Health → other
+    'encroachment': 'illegal_construction', // Encroachment → illegal_construction
+    'tax': 'other',                     // Revenue → other
+    'garden': 'other',                  // Garden → other
+    'estate': 'other',                  // Estate → other
+    'planning': 'illegal_construction', // Town planning → illegal_construction
+    'market': 'other',                  // Market → other
+    'signage': 'other',                 // Signage → other
+    'welfare': 'other',                 // Social welfare → other
+    'education': 'other',               // Education → other
+    'cultural': 'other',               // Cultural → other
+    'certificate': 'other',             // Birth/Death cert → other
+    'records': 'other',                 // Records → other
+    'general': 'other',                 // General admin → other
+    'finance': 'other',                 // Finance → other
+    'legal': 'other',                   // Legal → other
+    'pr': 'other',                      // Public relations → other
+    'it': 'other',                      // IT → other
+    'road_construction': 'road_damage', // Road construction → road_damage
+    'workshop': 'other',                // Workshop → other
+    'election': 'other',                // Election → other
+  };
+
+  /**
+   * Ensure a category is valid for the Complaint model enum.
+   * Falls back to 'other' for any unrecognized category.
+   */
+  static _safeCategory(rawCategory) {
+    if (!rawCategory) return 'other';
+    return this.VALID_CATEGORIES[rawCategory] || 'other';
+  }
+
+  // ══════════════════════════════════════════════════
   //  FORMAT AI RESPONSE → STANDARD RESULT OBJECT
   // ══════════════════════════════════════════════════
   static _formatResult(parsed, text) {
@@ -349,10 +396,13 @@ OUTPUT: Respond with ONLY this JSON — nothing else:
       })
     )].slice(0, 6);
 
+    // Ensure category is valid for Complaint model enum
+    const safeCategory = this._safeCategory(deptEntry?.category);
+
     return {
       success:        true,
       needsMoreInfo:  isUnclassified,
-      category:       deptEntry?.category || 'other',
+      category:       safeCategory,
       issue_type:     issueType,
       department:     deptEntry?.dept || null,
       confidence,
@@ -425,10 +475,13 @@ OUTPUT: Respond with ONLY this JSON — nothing else:
       matchedWords.map(w => CANONICAL[w] || w)
     )].slice(0, 6);
 
+    // Ensure category is valid for Complaint model enum
+    const safeCategory = this._safeCategory(deptEntry?.category);
+
     return {
       success:        true,
       needsMoreInfo:  isUnclassified,
-      category:       deptEntry?.category || 'other',
+      category:       safeCategory,
       issue_type:     bestIssue || 'Other',
       department:     deptEntry?.dept || null,
       confidence,

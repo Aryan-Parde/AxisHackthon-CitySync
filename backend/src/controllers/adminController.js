@@ -30,7 +30,7 @@ exports.getDashboardStats = async (req, res, next) => {
 
     // Average resolution time (for resolved complaints)
     const avgResolution = await Complaint.aggregate([
-      { $match: { status: 'resolved', resolvedAt: { $exists: true } } },
+      { $match: { ...cacheQuery, status: 'resolved', resolvedAt: { $exists: true } } },
       {
         $project: {
           resolutionTime: { $subtract: ['$resolvedAt', '$createdAt'] }
@@ -50,12 +50,14 @@ exports.getDashboardStats = async (req, res, next) => {
 
     // Category breakdown
     const categoryBreakdown = await Complaint.aggregate([
+      ...(Object.keys(cacheQuery).length > 0 ? [{ $match: cacheQuery }] : []),
       { $group: { _id: '$category', count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]);
 
     // Priority breakdown
     const priorityBreakdown = await Complaint.aggregate([
+      ...(Object.keys(cacheQuery).length > 0 ? [{ $match: cacheQuery }] : []),
       { $group: { _id: '$priority.level', count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]);
@@ -63,7 +65,7 @@ exports.getDashboardStats = async (req, res, next) => {
     // Recent 7 days trend
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const dailyTrend = await Complaint.aggregate([
-      { $match: { createdAt: { $gte: weekAgo } } },
+      { $match: { ...cacheQuery, createdAt: { $gte: weekAgo } } },
       {
         $group: {
           _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
@@ -75,6 +77,7 @@ exports.getDashboardStats = async (req, res, next) => {
 
     // Zone breakdown
     const zoneBreakdown = await Complaint.aggregate([
+      ...(Object.keys(cacheQuery).length > 0 ? [{ $match: cacheQuery }] : []),
       { $group: { _id: '$location.zone', count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]);
